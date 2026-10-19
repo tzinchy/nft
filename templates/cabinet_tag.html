@@ -1,21 +1,13 @@
 {{define "content"}}
-<a href="/cabinet/" class="back">← {{.V.BusinessName}}</a>
-<h1 class="mt-2 text-2xl font-bold"><span class="font-mono text-zinc-400">{{printf "#%03d" .V.T.ID}}</span> {{.V.T.Name}}</h1>
-<p class="mt-1 text-zinc-500">{{.V.LocationName}}</p>
-
-<form method="post" action="/cabinet/g/{{.V.T.ID}}" class="card mt-4 space-y-4">
-  <input type="hidden" name="csrf" value="{{.CSRF}}">
-  <label class="label">Куда перенаправлять<input class="input" type="url" name="url" value="{{.V.T.URL}}" required></label>
-  <label class="label">Статус
-    <select class="input" name="active">
-      <option value="1"{{if .V.T.Active}} selected{{end}}>● Активна</option>
-      <option value="0"{{if not .V.T.Active}} selected{{end}}>Отключена</option>
-    </select>
-  </label>
-  <button class="btn">Сохранить</button>
-</form>
-
-{{template "nfcurl" .NFCURL}}
-{{template "stats" .S}}
-{{template "history" (dict "History" .History "CSRF" .CSRF "RevertBase" (printf "/cabinet/g/%d/revert/" .V.T.ID))}}
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-2">
+    {{template "crumbs" (list (dict "href" "/cabinet/" "label" "Обзор") (dict "label" .V.LocationName) (dict "label" .V.T.Name))}}
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="page-title">{{.V.T.Name}}</h1>
+      {{if .V.T.Active}}<span class="badge-ok">Работает</span>{{else}}<span class="badge-bad">Отключена</span>{{end}}
+    </div>
+    <p class="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground [&>svg]:size-4 [&>svg]:shrink-0">{{template "i-link"}}<span class="truncate">Ведёт на {{.V.T.URL}}</span></p>
+  </div>
+  {{template "stats" .S}}
+</div>
 {{end}}

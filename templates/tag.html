@@ -1,21 +1,38 @@
 {{define "content"}}
-<a href="{{.P}}/l/{{.V.T.LocationID}}" class="back">← {{.V.BusinessName}} · {{.V.LocationName}}</a>
-<h1 class="mt-2 text-2xl font-bold"><span class="font-mono text-zinc-400">{{printf "#%03d" .V.T.ID}}</span> {{.V.T.Name}}</h1>
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-2">
+    {{template "crumbs" (list (dict "href" (printf "%s/" .P) "label" "Обзор") (dict "href" (printf "%s/b/%d" .P .V.BusinessID) "label" .V.BusinessName) (dict "href" (printf "%s/l/%d" .P .V.T.LocationID) "label" .V.LocationName) (dict "label" .V.T.Name))}}
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="page-title"><span class="text-muted-foreground">{{printf "№%03d" .V.T.ID}}</span> {{.V.T.Name}}</h1>
+      {{if .V.T.Active}}<span class="badge-ok">Работает</span>{{else}}<span class="badge-bad">Отключена</span>{{end}}
+    </div>
+  </div>
 
-<form method="post" action="{{.P}}/g/{{.V.T.ID}}" class="card mt-4 space-y-4">
-  <input type="hidden" name="csrf" value="{{.CSRF}}">
-  <label class="label">Название<input class="input" name="name" value="{{.V.T.Name}}" required></label>
-  <label class="label">Куда перенаправлять<input class="input" type="url" name="url" value="{{.V.T.URL}}" required></label>
-  <label class="label">Статус
-    <select class="input" name="active">
-      <option value="1"{{if .V.T.Active}} selected{{end}}>● Активна</option>
-      <option value="0"{{if not .V.T.Active}} selected{{end}}>Отключена</option>
-    </select>
-  </label>
-  <button class="btn">Сохранить</button>
-</form>
+  <div class="grid gap-4 lg:grid-cols-2">
+    <div class="flex flex-col gap-4">
+      <div class="card">
+        <header><h2>Адрес для записи в метку</h2><p>Записывается один раз и больше не меняется</p></header>
+        <section>{{template "nfcurl" .NFCURL}}</section>
+      </div>
+      <form method="post" action="{{.P}}/g/{{.V.T.ID}}" class="card">
+        <header><h2>Куда ведёт метка</h2><p>Меняйте сколько угодно — наклейку перезаписывать не нужно</p></header>
+        <section class="flex flex-col gap-4">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <div class="field"><label for="g-name">Название</label><input id="g-name" type="text" name="name" value="{{.V.T.Name}}" required></div>
+          <div class="field"><label for="g-url">Ссылка назначения</label><input id="g-url" type="url" name="url" value="{{.V.T.URL}}" required></div>
+          <div class="field"><label for="g-active">Состояние</label>
+            <select id="g-active" name="active">
+              <option value="1"{{if .V.T.Active}} selected{{end}}>Работает</option>
+              <option value="0"{{if not .V.T.Active}} selected{{end}}>Отключена — гость увидит «Метка отключена»</option>
+            </select>
+          </div>
+        </section>
+        <footer><button class="btn">Сохранить</button></footer>
+      </form>
+    </div>
+    {{template "history" (dict "History" .History "CSRF" .CSRF "RevertBase" (printf "%s/g/%d/revert/" .P .V.T.ID))}}
+  </div>
 
-{{template "nfcurl" .NFCURL}}
-{{template "stats" .S}}
-{{template "history" (dict "History" .History "CSRF" .CSRF "RevertBase" (printf "%s/g/%d/revert/" .P .V.T.ID))}}
+  {{template "stats" .S}}
+</div>
 {{end}}

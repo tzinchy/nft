@@ -1,30 +1,76 @@
 {{define "content"}}
-<h1 class="mb-4 text-2xl font-bold">Предприятия</h1>
-<div class="space-y-3">
-{{range .Businesses}}
-  <a href="{{$.P}}/b/{{.ID}}" class="card card-link group">
-    <div class="min-w-0">
-      <div class="flex flex-wrap items-center gap-2"><span class="truncate font-semibold">{{.Name}}</span><span class="{{.Status.Class}}">{{.Status.Label}}</span></div>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Точек: {{.Locations}} · меток: {{.Tags}} · до {{date .ExpiresAt}}</p>
+<div class="flex flex-col gap-6">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="page-title">Обзор</h1>
+      <p class="mt-1 text-muted-foreground">Все клиенты, метки и переходы</p>
     </div>
-    <span class="text-2xl text-zinc-400 group-hover:text-blue-500">›</span>
-  </a>
-{{else}}
-  <p class="card text-zinc-500 dark:text-zinc-400">Пока пусто — добавьте первое предприятие.</p>
-{{end}}
+    <a href="#new" class="btn">{{template "i-plus"}}Новое предприятие</a>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    {{template "kpi" (dict "label" "Переходов сегодня" "value" .S.Today)}}
+    {{template "kpi" (dict "label" (printf "За %d дн." .S.Days) "value" .S.Period)}}
+    {{template "kpi" (dict "label" "Активных меток" "value" .ActiveTags)}}
+    <div class="card" data-size="sm"><section class="flex flex-col gap-1">
+      <span class="text-sm text-muted-foreground">Требуют внимания</span>
+      <span class="kpi {{if .Attention}}text-[var(--warn)]{{end}}">{{.Attention}}</span>
+    </section></div>
+  </div>
+
+  <div class="card">
+    <header>
+      <h2>Предприятия</h2>
+      <p>Сначала те, у кого подписка заканчивается раньше</p>
+    </header>
+    {{if .Businesses}}
+    <div class="hidden border-t md:block">
+      <table class="table">
+        <thead><tr><th class="!pl-6">Название</th><th>Подписка</th><th class="text-right">Точек</th><th class="text-right">Меток</th><th class="text-right">Переходов за 30 дн.</th><th class="!pr-6">До</th></tr></thead>
+        <tbody>
+        {{range .Businesses}}
+          <tr class="cursor-pointer" onclick="location.href='{{$.P}}/b/{{.ID}}'">
+            <td class="!pl-6 font-medium"><a href="{{$.P}}/b/{{.ID}}" class="hover:underline">{{.Name}}</a></td>
+            <td><span class="{{.Status.Class}}">{{.Status.Label}}</span></td>
+            <td class="text-right">{{.Locations}}</td>
+            <td class="text-right">{{.Tags}}</td>
+            <td class="text-right">{{.Taps30}}</td>
+            <td class="!pr-6 text-muted-foreground">{{date .ExpiresAt}}</td>
+          </tr>
+        {{end}}
+        </tbody>
+      </table>
+    </div>
+    <ul class="flex flex-col divide-y border-t md:hidden">
+      {{range .Businesses}}
+      <li><a href="{{$.P}}/b/{{.ID}}" class="row-link">
+        <span class="min-w-0">
+          <span class="block truncate font-medium">{{.Name}}</span>
+          <span class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground"><span class="{{.Status.Class}}">{{.Status.Label}}</span><span>до {{date .ExpiresAt}}</span><span>{{plural .Tags "метка" "метки" "меток"}}</span><span>{{plural .Taps30 "переход" "перехода" "переходов"}}</span></span>
+        </span>
+        <span class="text-muted-foreground [&>svg]:size-4">{{template "i-chevron-right"}}</span>
+      </a></li>
+      {{end}}
+    </ul>
+    {{else}}
+    <section><div class="empty rounded-lg border border-dashed py-10"><header><h2>Клиентов пока нет</h2><p>Добавьте первое предприятие — дальше точки и метки.</p></header></div></section>
+    {{end}}
+  </div>
+
+  <details class="card disclosure !gap-0 !py-0" id="new"{{if not .Businesses}} open{{end}}>
+    <summary class="!py-4">{{template "i-plus"}}Новое предприятие</summary>
+    <form method="post" action="{{.P}}/businesses" class="grid gap-4 border-t px-4 py-5 sm:grid-cols-2 sm:px-6">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <div class="field sm:col-span-2"><label for="b-name">Название</label><input id="b-name" type="text" name="name" placeholder="Кофейня «Зерно»" required></div>
+      <div class="field"><label for="b-plan">Тариф</label><input id="b-plan" type="text" name="plan" value="Годовое обслуживание"></div>
+      <div class="field"><label for="b-price">Цена в год, ₽</label><input id="b-price" type="number" min="1" name="price" value="1499" required></div>
+      <div class="field"><label for="b-exp">Обслуживание до</label><input id="b-exp" type="date" name="expires_at" value="{{.DefaultExp}}" required></div>
+      <div class="flex items-end"><button class="btn w-full">Создать предприятие</button></div>
+    </form>
+  </details>
+
+  {{template "stats-charts" .S}}
+
+  <div class="lg:hidden">{{template "telegram" .}}</div>
 </div>
-<details class="add">
-  <summary>+ Добавить предприятие</summary>
-  <form method="post" action="{{.P}}/businesses" class="space-y-4 px-4 pb-4">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    <label class="label">Название<input class="input" name="name" required></label>
-    <label class="label">Тариф<input class="input" name="plan" value="Годовое обслуживание"></label>
-    <div class="grid grid-cols-2 gap-3">
-      <label class="label">Цена в год, ₽<input class="input" type="number" min="1" name="price" value="1499" required></label>
-      <label class="label">Действует до<input class="input" type="date" name="expires_at" value="{{.DefaultExp}}" required></label>
-    </div>
-    <button class="btn">Создать</button>
-  </form>
-</details>
-{{template "telegram" .}}
 {{end}}

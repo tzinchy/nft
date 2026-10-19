@@ -1,18 +1,144 @@
 @import "tailwindcss";
+@import "./third_party/basecoat/dist/basecoat.css";
+@import "./fonts.css";
 @source "./templates";
 
-@layer components {
-  .card { @apply block rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800; }
-  .card-link { @apply flex items-center justify-between gap-3 transition hover:ring-blue-500; }
-  .label { @apply block text-sm font-medium text-zinc-500 dark:text-zinc-400; }
-  .input { @apply mt-1 block w-full rounded-xl border-0 bg-zinc-100 px-3 py-2.5 text-base text-zinc-900 ring-1 ring-zinc-200 outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700; }
-  .btn { @apply w-full cursor-pointer rounded-xl bg-blue-600 px-4 py-2.5 font-semibold text-white transition hover:bg-blue-700 active:bg-blue-800; }
-  .btn-ghost { @apply cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800; }
-  .badge-ok { @apply inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-500/15 dark:text-green-400; }
-  .badge-warn { @apply inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-400; }
-  .badge-bad { @apply inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-500/15 dark:text-red-400; }
-  .back { @apply inline-block text-sm font-medium text-blue-600 hover:underline dark:text-blue-400; }
-  .h2 { @apply mt-8 mb-3 text-sm font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400; }
-  .add { @apply mt-3 rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800; }
-  .add > summary { @apply cursor-pointer list-none rounded-2xl p-4 text-center font-semibold text-blue-600 dark:text-blue-400 [&::-webkit-details-marker]:hidden; }
+/* Шрифты: Onest — интерфейс, Unbounded — заголовки и крупные числа. Обе с кириллицей. */
+@theme {
+  --font-sans: "Onest", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Unbounded", "Onest", ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Палитра «сигнал»: холодный фарфор, графитовые чернила и кобальт — цвет радиоволны бесконтактного касания.
+   Статусы (ok/warn/bad) зарезервированы и в графиках не используются. */
+:root {
+  --radius: 0.75rem;
+  --background: #f4f6f8;
+  --foreground: #1b2230;
+  --card: #ffffff;
+  --card-foreground: #1b2230;
+  --popover: #ffffff;
+  --popover-foreground: #1b2230;
+  --primary: #2440e6;
+  --primary-foreground: #ffffff;
+  --secondary: #e9edf3;
+  --secondary-foreground: #1b2230;
+  --muted: #eef1f5;
+  --muted-foreground: #5e6878;
+  --accent: #e8ecfd;
+  --accent-foreground: #1a2fb0;
+  --destructive: #d23a3a;
+  --border: #dfe4eb;
+  --input: #d5dbe4;
+  --ring: #2440e6;
+  /* графики: 1 — основной ряд; 1–3 — категориальная тройка, проверена на дальтонизм */
+  --chart-1: #2440e6;
+  --chart-2: #13a391;
+  --chart-3: #e8932a;
+  --chart-4: #8fa0f5;
+  --chart-5: #1b2230;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1b2230;
+  --sidebar-primary: #2440e6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef1f5;
+  --sidebar-accent-foreground: #1b2230;
+  --sidebar-border: #dfe4eb;
+  --sidebar-ring: #2440e6;
+  --ok: #157a3d;
+  --ok-bg: #e3f4e8;
+  --ok-solid: #2ed46e;
+  --ok-ink: #03371a;
+  --warn: #8a5300;
+  --warn-bg: #fdf0d6;
+  --bad: #b42323;
+  --bad-bg: #fde6e4;
+}
+
+.dark {
+  --background: #0f131a;
+  --foreground: #e6eaf2;
+  --card: #171c25;
+  --card-foreground: #e6eaf2;
+  --popover: #171c25;
+  --popover-foreground: #e6eaf2;
+  --primary: #6f84ff;
+  --primary-foreground: #0f131a;
+  --secondary: #222937;
+  --secondary-foreground: #e6eaf2;
+  --muted: #1d2330;
+  --muted-foreground: #8b95a7;
+  --accent: #1f2847;
+  --accent-foreground: #b7c2ff;
+  --destructive: #f07070;
+  --border: #262d3b;
+  --input: #2d3545;
+  --ring: #6f84ff;
+  --chart-1: #6f84ff;
+  --chart-2: #169c8b;
+  --chart-3: #d07f1c;
+  --chart-4: #3d4a8a;
+  --chart-5: #e6eaf2;
+  --sidebar: #131821;
+  --sidebar-foreground: #e6eaf2;
+  --sidebar-primary: #6f84ff;
+  --sidebar-primary-foreground: #0f131a;
+  --sidebar-accent: #1d2330;
+  --sidebar-accent-foreground: #e6eaf2;
+  --sidebar-border: #262d3b;
+  --sidebar-ring: #6f84ff;
+  --ok: #5fd08a;
+  --ok-bg: #12301f;
+  --ok-solid: #2ed46e;
+  --ok-ink: #03371a;
+  --warn: #f2b45a;
+  --warn-bg: #33250c;
+  --bad: #ff8a80;
+  --bad-bg: #3a1716;
+}
+
+@layer base {
+  body { @apply bg-background text-foreground font-sans antialiased; font-feature-settings: "tnum" 1; }
+  h1, h2, h3 { text-wrap: balance; }
+}
+
+@layer components {
+  /* статусы подписки и меток: точка + слово, не только цвет */
+  .badge-ok, .badge-warn, .badge-bad { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap; }
+  :is(.badge-ok, .badge-warn, .badge-bad)::before { content: ""; @apply size-1.5 rounded-full bg-current; }
+  /* «работает / активен» — сочный зелёный с подсветкой: главный сигнал «всё хорошо» */
+  .badge-ok { color: var(--ok-ink); background: var(--ok-solid); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ok-solid) 28%, transparent); }
+  .badge-ok::before { background: var(--ok-ink); box-shadow: 0 0 0 2px color-mix(in oklab, var(--ok-ink) 25%, transparent); }
+  .badge-warn { color: var(--warn); background: var(--warn-bg); }
+  .badge-bad { color: var(--bad); background: var(--bad-bg); }
+
+  .page-title { @apply font-display text-2xl font-semibold tracking-tight sm:text-3xl; }
+  .section-title { @apply text-base font-semibold; }
+  .kpi { @apply font-display text-3xl font-semibold tracking-tight; }
+  .crumbs { @apply flex flex-wrap items-center gap-1 text-sm text-muted-foreground; }
+  .crumbs a { @apply hover:text-foreground; }
+  .crumbs svg { @apply size-3.5 opacity-60; }
+
+  .nav-link { @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground; }
+  .nav-link[aria-current="page"] { @apply bg-accent text-accent-foreground; }
+  .nav-link svg { @apply size-4 shrink-0; }
+
+  .row-link { @apply flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/60 sm:px-6; }
+
+  /* раскрывающиеся формы «Добавить …» */
+  .disclosure > summary { @apply flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-primary sm:px-6 [&::-webkit-details-marker]:hidden; }
+  .disclosure > summary svg { @apply size-4 transition-transform; }
+  .disclosure[open] > summary svg { @apply rotate-45; }
+
+  .copy-box { @apply w-full cursor-pointer rounded-lg border border-dashed border-primary/40 bg-accent/50 p-4 text-left transition-colors hover:bg-accent; }
+}
+
+/* анимация касания на главной — единственное «живое» место; уважаем reduced motion */
+@keyframes ripple { from { transform: scale(.35); opacity: .55; } to { transform: scale(1); opacity: 0; } }
+.ripple > span { animation: ripple 2.6s cubic-bezier(.2,.6,.3,1) infinite; }
+.ripple > span:nth-child(2) { animation-delay: .85s; }
+.ripple > span:nth-child(3) { animation-delay: 1.7s; }
+@media (prefers-reduced-motion: reduce) { .ripple > span { animation: none; opacity: .25; } }
+
+/* график занимает высоту своего блока, а не 16:9 по умолчанию Basecoat */
+.chart-box .chart { aspect-ratio: auto; height: 100%; }

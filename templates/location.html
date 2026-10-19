@@ -1,29 +1,38 @@
 {{define "content"}}
-<a href="{{.P}}/b/{{.L.BusinessID}}" class="back">← {{.BusinessName}}</a>
-<h1 class="mt-2 text-2xl font-bold">{{.L.Name}}</h1>
-{{if .L.Address}}<p class="mt-1 text-zinc-500 dark:text-zinc-400">{{.L.Address}}</p>{{end}}
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-2">
+    {{template "crumbs" (list (dict "href" (printf "%s/" .P) "label" "Обзор") (dict "href" (printf "%s/b/%d" .P .L.BusinessID) "label" .BusinessName) (dict "label" .L.Name))}}
+    <h1 class="page-title">{{.L.Name}}</h1>
+    {{if .L.Address}}<p class="flex items-center gap-1.5 text-muted-foreground [&>svg]:size-4">{{template "i-map-pin"}}{{.L.Address}}</p>{{end}}
+  </div>
 
-<h2 class="h2">Метки</h2>
-<div class="space-y-3">
-{{range .Tags}}
-  <a href="{{$.P}}/g/{{.ID}}" class="card card-link group">
-    <div class="min-w-0">
-      <div class="flex flex-wrap items-center gap-2"><span class="font-mono text-zinc-400">{{printf "#%03d" .ID}}</span><span class="truncate font-semibold">{{.Name}}</span>{{if .Active}}<span class="badge-ok">● Активна</span>{{else}}<span class="badge-bad">Отключена</span>{{end}}</div>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Переходов: {{.Clicks}}</p>
-    </div>
-    <span class="text-2xl text-zinc-400 group-hover:text-blue-500">›</span>
-  </a>
-{{else}}
-  <p class="card text-zinc-500 dark:text-zinc-400">Меток пока нет.</p>
-{{end}}
+  <div class="card !gap-0 !pb-0">
+    <header class="pb-4"><h2>Метки</h2><p>Каждая наклейка — отдельная метка со своей статистикой</p></header>
+    {{if .Tags}}
+    <ul class="flex flex-col divide-y border-t">
+      {{range .Tags}}
+      <li><a href="{{$.P}}/g/{{.ID}}" class="row-link">
+        <span class="flex min-w-0 items-center gap-3">
+          <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground [&>svg]:size-4">{{template "i-nfc"}}</span>
+          <span class="min-w-0">
+            <span class="block truncate font-medium"><span class="text-muted-foreground">{{printf "№%03d" .ID}}</span> {{.Name}}</span>
+            <span class="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">{{if .Active}}<span class="badge-ok">Работает</span>{{else}}<span class="badge-bad">Отключена</span>{{end}}{{plural .Clicks "переход" "перехода" "переходов"}}</span>
+          </span>
+        </span>
+        <span class="text-muted-foreground [&>svg]:size-4">{{template "i-chevron-right"}}</span>
+      </a></li>
+      {{end}}
+    </ul>
+    {{end}}
+    <details class="disclosure border-t"{{if not .Tags}} open{{end}}>
+      <summary>{{template "i-plus"}}Добавить метку</summary>
+      <form method="post" action="{{.P}}/l/{{.L.ID}}/tags" class="grid gap-4 px-4 pb-5 sm:grid-cols-2 sm:px-6">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <div class="field"><label for="t-name">Название</label><input id="t-name" type="text" name="name" placeholder="Касса" required></div>
+        <div class="field"><label for="t-url">Куда вести</label><input id="t-url" type="url" name="url" placeholder="https://yandex.ru/maps/org/…" required></div>
+        <button class="btn sm:col-span-2 sm:justify-self-start">Создать метку</button>
+      </form>
+    </details>
+  </div>
 </div>
-<details class="add">
-  <summary>+ Добавить метку</summary>
-  <form method="post" action="{{.P}}/l/{{.L.ID}}/tags" class="space-y-4 px-4 pb-4">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    <label class="label">Название<input class="input" name="name" placeholder="Касса" required></label>
-    <label class="label">Куда перенаправлять<input class="input" type="url" name="url" placeholder="https://yandex.ru/maps/..." required></label>
-    <button class="btn">Создать</button>
-  </form>
-</details>
 {{end}}

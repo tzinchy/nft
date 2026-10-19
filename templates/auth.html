@@ -1,10 +1,18 @@
 {{define "content"}}
-<div class="mt-16">
-  <h1 class="mb-6 text-center text-2xl font-bold">{{if .Setup}}Создайте администратора{{else}}Вход{{end}}</h1>
-  <form method="post" action="{{.Action}}" class="card space-y-4">
-    <label class="label">Почта<input class="input" type="email" name="email" autocomplete="username" required autofocus></label>
-    <label class="label">Пароль<input class="input" type="password" name="password" {{if .Setup}}minlength="8" autocomplete="new-password" placeholder="минимум 8 символов"{{else}}autocomplete="current-password"{{end}} required></label>
-    <button class="btn">{{if .Setup}}Создать{{else}}Войти{{end}}</button>
-  </form>
+<div class="mx-auto flex min-h-[calc(100dvh-8rem)] max-w-sm flex-col justify-center px-4 py-10">
+  <div class="card">
+    <header>
+      <h2 class="font-display !text-xl !font-semibold">{{if .Setup}}Создайте администратора{{else}}Вход{{end}}</h2>
+      <p>{{if .Setup}}Этот аккаунт будет управлять всеми клиентами и метками{{else}}Для владельцев заведений и администратора{{end}}</p>
+    </header>
+    <section>
+      {{if .Error}}<div class="alert mb-4" data-variant="destructive">{{template "i-circle-alert"}}<h2>{{.Error}}</h2></div>{{end}}
+      <form method="post" action="{{.Action}}" class="flex flex-col gap-4">
+        <div class="field"><label for="a-email">Почта</label><input id="a-email" type="email" name="email" autocomplete="username" required autofocus></div>
+        <div class="field"><label for="a-pw">Пароль</label><input id="a-pw" type="password" name="password" {{if .Setup}}minlength="8" autocomplete="new-password" placeholder="Не короче 8 символов"{{else}}autocomplete="current-password"{{end}} required></div>
+        <button class="btn w-full">{{if .Setup}}Создать и войти{{else}}Войти{{end}}</button>
+      </form>
+    </section>
+  </div>
 </div>
 {{end}}

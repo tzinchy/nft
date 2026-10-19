@@ -1,82 +1,100 @@
 {{define "content"}}
-<a href="{{.P}}/" class="back">← Предприятия</a>
-<h1 class="mt-2 text-2xl font-bold">{{.B.Name}}</h1>
-<div class="card mt-4">
-  <div class="flex items-center justify-between gap-3"><span class="font-semibold">{{.B.Plan}} · {{.B.Price}} ₽</span><span class="{{.B.Status.Class}}">{{.B.Status.Label}}</span></div>
-  <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">с {{date .B.StartsAt}} до {{date .B.ExpiresAt}}</p>
-</div>
-<details class="add">
-  <summary>Изменить предприятие и подписку</summary>
-  <form method="post" action="{{.P}}/b/{{.B.ID}}" class="space-y-4 px-4 pb-4">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    <label class="label">Название<input class="input" name="name" value="{{.B.Name}}" required></label>
-    <div class="grid grid-cols-2 gap-3">
-      <label class="label">Тариф<input class="input" name="plan" value="{{.B.Plan}}"></label>
-      <label class="label">Цена в год, ₽<input class="input" type="number" min="1" name="price" value="{{.B.Price}}" required></label>
-      <label class="label">Начало<input class="input" type="date" name="starts_at" value="{{.B.StartsAt}}" required></label>
-      <label class="label">Действует до<input class="input" type="date" name="expires_at" value="{{.B.ExpiresAt}}" required></label>
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-2">
+    {{template "crumbs" (list (dict "href" (printf "%s/" .P) "label" "Обзор") (dict "label" .B.Name))}}
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="page-title">{{.B.Name}}</h1>
+      <span class="{{.B.Status.Class}}">{{.B.Status.Label}}</span>
     </div>
-    <button class="btn">Сохранить</button>
-  </form>
-</details>
-<details class="add">
-  <summary>Отметить оплату (наличные / перевод)</summary>
-  <form method="post" action="{{.P}}/b/{{.B.ID}}/paid" class="space-y-4 px-4 pb-4">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    <label class="label">Сумма, ₽<input class="input" type="number" min="1" name="amount" value="{{.B.Price}}" required></label>
-    <p class="text-sm text-zinc-500">Подписка продлится на 12 месяцев от даты окончания (или от сегодня, если уже истекла).</p>
-    <button class="btn">Отметить оплату</button>
-  </form>
-</details>
+  </div>
 
-<h2 class="h2">Точки</h2>
-<div class="space-y-3">
-{{range .Locations}}
-  <a href="{{$.P}}/l/{{.ID}}" class="card card-link group">
-    <div class="min-w-0">
-      <div class="truncate font-semibold">{{.Name}}</div>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{if .Address}}{{.Address}} · {{end}}меток: {{.Tags}}</p>
+  <div class="grid gap-4 lg:grid-cols-[1fr_22rem]">
+    <div class="card !gap-0 !pb-0">
+      <header class="pb-4"><h2>Точки</h2><p>Филиалы и места, где наклеены метки</p></header>
+      {{if .Locations}}
+      <ul class="flex flex-col divide-y border-t">
+        {{range .Locations}}
+        <li><a href="{{$.P}}/l/{{.ID}}" class="row-link">
+          <span class="flex min-w-0 items-center gap-3">
+            <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground [&>svg]:size-4">{{template "i-map-pin"}}</span>
+            <span class="min-w-0"><span class="block truncate font-medium">{{.Name}}</span>{{if .Address}}<span class="block truncate text-xs text-muted-foreground">{{.Address}}</span>{{end}}</span>
+          </span>
+          <span class="flex items-center gap-3 text-sm text-muted-foreground">{{plural .Tags "метка" "метки" "меток"}}<span class="[&>svg]:size-4">{{template "i-chevron-right"}}</span></span>
+        </a></li>
+        {{end}}
+      </ul>
+      {{end}}
+      <details class="disclosure border-t"{{if not .Locations}} open{{end}}>
+        <summary>{{template "i-plus"}}Добавить точку</summary>
+        <form method="post" action="{{.P}}/b/{{.B.ID}}/locations" class="grid gap-4 px-4 pb-5 sm:grid-cols-2 sm:px-6">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <div class="field"><label for="l-name">Название</label><input id="l-name" type="text" name="name" placeholder="Арбат" required></div>
+          <div class="field"><label for="l-addr">Адрес</label><input id="l-addr" type="text" name="address" placeholder="ул. Арбат, 21"></div>
+          <button class="btn sm:col-span-2 sm:justify-self-start">Добавить точку</button>
+        </form>
+      </details>
     </div>
-    <span class="text-2xl text-zinc-400 group-hover:text-blue-500">›</span>
-  </a>
-{{else}}
-  <p class="card text-zinc-500 dark:text-zinc-400">Точек пока нет.</p>
-{{end}}
+
+    <div class="flex flex-col gap-4">
+      <div class="card" data-size="sm">
+        <header><h2>Подписка</h2><p>{{.B.Plan}}</p></header>
+        <section class="flex flex-col gap-1">
+          <span class="kpi">{{.B.Price}} ₽</span>
+          <span class="text-sm text-muted-foreground">в год, с {{date .B.StartsAt}} до {{date .B.ExpiresAt}}</span>
+        </section>
+        <details class="disclosure border-t">
+          <summary class="!px-4">{{template "i-wallet"}}Отметить оплату</summary>
+          <form method="post" action="{{.P}}/b/{{.B.ID}}/paid" class="flex flex-col gap-3 px-4 pb-4">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <div class="field"><label for="p-amount">Сумма, ₽</label><input id="p-amount" type="number" min="1" name="amount" value="{{.B.Price}}" required></div>
+            <p class="text-xs text-muted-foreground">Наличные или перевод. Продлит обслуживание на 12 месяцев от даты окончания, а если она прошла — от сегодня.</p>
+            <button class="btn">Отметить оплату</button>
+          </form>
+        </details>
+        <details class="disclosure border-t">
+          <summary class="!px-4">{{template "i-plus"}}Изменить данные</summary>
+          <form method="post" action="{{.P}}/b/{{.B.ID}}" class="flex flex-col gap-3 px-4 pb-4">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <div class="field"><label for="e-name">Название</label><input id="e-name" type="text" name="name" value="{{.B.Name}}" required></div>
+            <div class="field"><label for="e-plan">Тариф</label><input id="e-plan" type="text" name="plan" value="{{.B.Plan}}"></div>
+            <div class="field"><label for="e-price">Цена в год, ₽</label><input id="e-price" type="number" min="1" name="price" value="{{.B.Price}}" required></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="field"><label for="e-start">Начало</label><input id="e-start" type="date" name="starts_at" value="{{.B.StartsAt}}" required></div>
+              <div class="field"><label for="e-exp">Окончание</label><input id="e-exp" type="date" name="expires_at" value="{{.B.ExpiresAt}}" required></div>
+            </div>
+            <button class="btn">Сохранить</button>
+          </form>
+        </details>
+      </div>
+
+      <div class="card" data-size="sm">
+        <header><h2>Доступ в кабинет</h2><p>Клиент видит точки и статистику, менять ничего не может</p></header>
+        {{if .Clients}}
+        <ul class="flex flex-col divide-y border-t">
+          {{range .Clients}}
+          <li><form method="post" action="{{$.P}}/users/{{.ID}}/delete" class="flex items-center justify-between gap-2 px-4 py-2.5">
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <span class="min-w-0"><span class="block truncate text-sm font-medium">{{.Email}}</span><span class="text-xs text-muted-foreground">Telegram {{if .TGLinked}}подключён{{else}}не подключён{{end}}</span></span>
+            <button class="btn" data-variant="ghost" data-size="xs">Закрыть доступ</button>
+          </form></li>
+          {{end}}
+        </ul>
+        {{end}}
+        <details class="disclosure border-t"{{if not .Clients}} open{{end}}>
+          <summary class="!px-4">{{template "i-user-round"}}Выдать доступ</summary>
+          <form method="post" action="{{.P}}/b/{{.B.ID}}/clients" class="flex flex-col gap-3 px-4 pb-4">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <div class="field"><label for="c-email">Почта клиента</label><input id="c-email" type="email" name="email" required></div>
+            <div class="field"><label for="c-pw">Временный пароль</label><input id="c-pw" type="text" name="password" minlength="8" placeholder="Не короче 8 символов" required></div>
+            <p class="text-xs text-muted-foreground">Вход: адрес сайта /cabinet/. Пароль клиент сменит сам.</p>
+            <button class="btn">Выдать доступ</button>
+          </form>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  {{template "stats" .S}}
+  {{template "payments" .Payments}}
 </div>
-<details class="add">
-  <summary>+ Добавить точку</summary>
-  <form method="post" action="{{.P}}/b/{{.B.ID}}/locations" class="space-y-4 px-4 pb-4">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    <label class="label">Название<input class="input" name="name" placeholder="Арбат" required></label>
-    <label class="label">Адрес<input class="input" name="address" placeholder="ул. Арбат, 21"></label>
-    <button class="btn">Создать</button>
-  </form>
-</details>
-
-{{template "stats" .S}}
-
-<h2 class="h2">Доступ клиента в кабинет</h2>
-<div class="space-y-3">
-{{range .Clients}}
-  <form method="post" action="{{$.P}}/users/{{.ID}}/delete" class="card flex items-center justify-between gap-3">
-    <input type="hidden" name="csrf" value="{{$.CSRF}}">
-    <div class="min-w-0"><div class="truncate font-semibold">{{.Email}}</div><p class="text-sm text-zinc-500">Telegram: {{if .TGLinked}}привязан{{else}}нет{{end}}</p></div>
-    <button class="btn-ghost text-red-600 dark:text-red-400">Удалить</button>
-  </form>
-{{else}}
-  <p class="card text-zinc-500 dark:text-zinc-400">Клиент пока не имеет доступа. Кабинет: <span class="font-mono">/cabinet/</span></p>
-{{end}}
-</div>
-<details class="add">
-  <summary>+ Дать доступ клиенту</summary>
-  <form method="post" action="{{.P}}/b/{{.B.ID}}/clients" class="space-y-4 px-4 pb-4">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    <label class="label">Почта клиента<input class="input" type="email" name="email" required></label>
-    <label class="label">Временный пароль<input class="input" name="password" minlength="8" placeholder="минимум 8 символов" required></label>
-    <p class="text-sm text-zinc-500">Передайте почту и пароль клиенту — он сможет сменить пароль в кабинете.</p>
-    <button class="btn">Создать доступ</button>
-  </form>
-</details>
-
-{{template "payments" .Payments}}
 {{end}}

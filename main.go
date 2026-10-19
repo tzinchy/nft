@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"embed"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -80,6 +81,7 @@ var okMsgs = map[string]string{
 
 type config struct {
 	DBPath, Public, Panel string
+	Contact               string // ссылка «Связаться» на главной (Telegram, WhatsApp, почта)
 	YK                    ykConfig
 	TGToken, TGAPI        string
 }
@@ -88,6 +90,7 @@ type app struct {
 	db            *sql.DB
 	tpl           map[string]*template.Template
 	public, panel string
+	contact       string
 	salt          string // для обезличенного подсчёта уникальных посетителей
 	yk            ykConfig
 	tg            *telegram // nil — Telegram выключен
@@ -96,6 +99,7 @@ type app struct {
 }
 
 type session struct {
+	Token      string
 	UserID     int64
 	Email      string
 	CSRF       string
@@ -110,7 +114,7 @@ type business struct {
 	ID                              int64
 	Name, Plan, StartsAt, ExpiresAt string
 	Price                           int
-	Locations, Tags                 int
+	Locations, Tags, Taps30         int
 	Status                          status
 }
 
@@ -138,9 +142,10 @@ type change struct {
 func main() {
 	addr := env("ADDR", ":8080")
 	a, h, err := newApp(config{
-		DBPath: env("DB_PATH", "nfc.db"),
-		Public: env("PUBLIC_URL", "http://localhost:8080"),
-		Panel:  env("PANEL_PATH", "/panel"),
+		DBPath:  env("DB_PATH", "nfc.db"),
+		Public:  env("PUBLIC_URL", "http://localhost:8080"),
+		Panel:   env("PANEL_PATH", "/panel"),
+		Contact: os.Getenv("CONTACT_URL"),
 		YK: ykConfig{
 			ShopID:  os.Getenv("YOOKASSA_SHOP_ID"),
 			Secret:  os.Getenv("YOOKASSA_SECRET_KEY"),
@@ -209,7 +214,7 @@ func newApp(c config) (*app, http.Handler, error) {
 	a := &app{
 		db: db, tpl: map[string]*template.Template{},
 		public: strings.TrimRight(c.Public, "/"), panel: "/" + strings.Trim(c.Panel, "/"),
-		yk: c.YK, http: &http.Client{Timeout: 30 * time.Second}, now: time.Now,
+		contact: c.Contact, yk: c.YK, http: &http.Client{Timeout: 30 * time.Second}, now: time.Now,
 	}
 	if c.TGToken != "" {
 		a.tg = &telegram{base: strings.TrimRight(c.TGAPI, "/") + "/bot" + c.TGToken, http: &http.Client{Timeout: 70 * time.Second}}
@@ -224,6 +229,9 @@ func newApp(c config) (*app, http.Handler, error) {
 		"dt":      func(u int64) string { return time.Unix(u, 0).In(msk).Format("02.01.2006 15:04") },
 		"periods": func() []int { return []int{7, 30, 90} },
 		"last":    func(b []bar) bar { return b[len(b)-1] },
+		"json":    func(v any) (string, error) { b, err := json.Marshal(v); return string(b), err },
+		"list":    func(v ...any) []any { return v },
+		"plural":  plural,
 		"dict": func(kv ...any) map[string]any {
 			m := map[string]any{}
 			for i := 0; i+1 < len(kv); i += 2 {
@@ -241,10 +249,10 @@ func newApp(c config) (*app, http.Handler, error) {
 	pages, _ := fs.Glob(assets, "templates/*.html")
 	for _, p := range pages {
 		name := strings.TrimSuffix(strings.TrimPrefix(p, "templates/"), ".html")
-		if name == "layout" || name == "partials" {
+		if name == "layout" || name == "partials" || name == "icons" {
 			continue
 		}
-		a.tpl[name] = template.Must(template.New("").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/partials.html", p))
+		a.tpl[name] = template.Must(template.New("").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/partials.html", "templates/icons.html", p))
 	}
 
 	static, _ := fs.Sub(assets, "static")
@@ -253,7 +261,7 @@ func newApp(c config) (*app, http.Handler, error) {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(static)))
 	mux.HandleFunc("GET /t/{token}", a.redirect)
 	mux.HandleFunc("POST /pay/yookassa", a.ykWebhook)
-	mux.HandleFunc("GET /guide", a.guide)
+	mux.HandleFunc("GET /{$}", a.landing)
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		a.message(w, 404, "Страница не найдена")
 	})
@@ -283,8 +291,6 @@ func newApp(c config) (*app, http.Handler, error) {
 	mux.HandleFunc("POST /cabinet/login", a.login)
 	mux.HandleFunc("POST /cabinet/logout", a.anyUser(a.logout))
 	mux.HandleFunc("GET /cabinet/g/{id}", a.client(a.cabinetTag))
-	mux.HandleFunc("POST /cabinet/g/{id}", a.client(a.cabinetUpdateTag))
-	mux.HandleFunc("POST /cabinet/g/{id}/revert/{hid}", a.client(a.revertTag))
 	mux.HandleFunc("POST /cabinet/pay", a.client(a.startPayment))
 	mux.HandleFunc("GET /cabinet/pay/{id}", a.client(a.paymentReturn))
 	mux.HandleFunc("POST /cabinet/telegram", a.client(a.tgLink))
@@ -374,13 +380,15 @@ func clientIP(r *http.Request) string {
 	return host
 }
 
-// guide — инструкция по записи метки, открыта без входа (метки могут ставить сотрудники клиента).
-func (a *app) guide(w http.ResponseWriter, r *http.Request) {
-	d := map[string]any{"Title": "Как записать NFC-метку"}
+// landing — главная: что это за сервис, как работает и сколько стоит.
+func (a *app) landing(w http.ResponseWriter, r *http.Request) {
+	d := map[string]any{"Title": "Отзывы с одного касания"}
 	if s := a.session(r); s != nil {
-		d = a.data(r, s, "Как записать NFC-метку", d)
+		d = a.data(r, s, "Отзывы с одного касания", d)
 	}
-	a.render(w, 200, "guide", d)
+	d["Public"], d["Index"], d["Contact"] = true, true, a.contact
+	d["Description"] = "NFC-наклейки для кафе, салонов и магазинов: гость прикладывает телефон и сразу попадает на страницу отзывов."
+	a.render(w, 200, "landing", d)
 }
 
 // --- вход ---
@@ -445,18 +453,18 @@ func (a *app) home(role string) string {
 }
 
 func (a *app) session(r *http.Request) *session {
-	c, err := r.Cookie("sid")
-	if err != nil {
-		return nil
+	// cookie «sid» может быть несколько (например, старая с другим Path) — берём первую рабочую
+	for _, c := range r.CookiesNamed("sid") {
+		var s session
+		err := a.db.QueryRow(`SELECT s.user_id, u.email, s.csrf, u.role, COALESCE(u.business_id, 0), u.tg_chat_id IS NOT NULL
+			FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?`, c.Value, a.now().Unix()).
+			Scan(&s.UserID, &s.Email, &s.CSRF, &s.Role, &s.BusinessID, &s.TGLinked)
+		if err == nil {
+			s.Token = c.Value
+			return &s
+		}
 	}
-	var s session
-	err = a.db.QueryRow(`SELECT s.user_id, u.email, s.csrf, u.role, COALESCE(u.business_id, 0), u.tg_chat_id IS NOT NULL
-		FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?`, c.Value, a.now().Unix()).
-		Scan(&s.UserID, &s.Email, &s.CSRF, &s.Role, &s.BusinessID, &s.TGLinked)
-	if err != nil {
-		return nil
-	}
-	return &s
+	return nil
 }
 
 type handler func(http.ResponseWriter, *http.Request, *session)
@@ -486,9 +494,7 @@ func (a *app) client(h handler) http.HandlerFunc  { return a.guard("client", h) 
 func (a *app) anyUser(h handler) http.HandlerFunc { return a.guard("", h) }
 
 func (a *app) logout(w http.ResponseWriter, r *http.Request, s *session) {
-	if c, err := r.Cookie("sid"); err == nil {
-		a.db.Exec(`DELETE FROM sessions WHERE token = ?`, c.Value)
-	}
+	a.db.Exec(`DELETE FROM sessions WHERE token = ?`, s.Token)
 	http.SetCookie(w, &http.Cookie{Name: "sid", Path: "/", MaxAge: -1})
 	http.Redirect(w, r, a.home(s.Role), http.StatusSeeOther)
 }
@@ -511,11 +517,11 @@ func (a *app) loadTag(id string, biz int64) (tagView, error) {
 	return v, err
 }
 
-// saveTag меняет ссылку/статус (и название, если name != ""), пишет историю. ErrNoRows — нет метки или чужая.
-func (a *app) saveTag(id string, biz, uid int64, name, dst string, active bool) error {
+// saveTag меняет название, ссылку и статус метки, пишет историю смены ссылки.
+func (a *app) saveTag(id string, uid int64, name, dst string, active bool) error {
 	return a.tx(func(tx *sql.Tx) error {
 		var old string
-		err := tx.QueryRow(`SELECT t.destination_url FROM tags t JOIN locations l ON l.id = t.location_id WHERE t.id = ? AND (? = 0 OR l.business_id = ?)`, id, biz, biz).Scan(&old)
+		err := tx.QueryRow(`SELECT destination_url FROM tags WHERE id = ?`, id).Scan(&old)
 		if err != nil {
 			return err
 		}
@@ -524,22 +530,17 @@ func (a *app) saveTag(id string, biz, uid int64, name, dst string, active bool) 
 				return err
 			}
 		}
-		_, err = tx.Exec(`UPDATE tags SET name = COALESCE(NULLIF(?, ''), name), destination_url = ?, active = ? WHERE id = ?`, name, dst, active, id)
+		_, err = tx.Exec(`UPDATE tags SET name = ?, destination_url = ?, active = ? WHERE id = ?`, name, dst, active, id)
 		return err
 	})
 }
 
-// revertTag — для админки и кабинета: кабинет может откатывать только свои метки.
+// revertTag возвращает прежнюю ссылку из истории (только админ).
 func (a *app) revertTag(w http.ResponseWriter, r *http.Request, s *session) {
 	id := r.PathValue("id")
-	biz := s.BusinessID
-	if s.Role == "admin" {
-		biz = 0
-	}
 	err := a.tx(func(tx *sql.Tx) error {
 		var prev, cur string
-		err := tx.QueryRow(`SELECT h.old_url, t.destination_url FROM tag_history h JOIN tags t ON t.id = h.tag_id JOIN locations l ON l.id = t.location_id
-			WHERE h.id = ? AND h.tag_id = ? AND (? = 0 OR l.business_id = ?)`, r.PathValue("hid"), id, biz, biz).Scan(&prev, &cur)
+		err := tx.QueryRow(`SELECT h.old_url, t.destination_url FROM tag_history h JOIN tags t ON t.id = h.tag_id WHERE h.id = ? AND h.tag_id = ?`, r.PathValue("hid"), id).Scan(&prev, &cur)
 		if err != nil || prev == cur {
 			return err
 		}
@@ -553,11 +554,7 @@ func (a *app) revertTag(w http.ResponseWriter, r *http.Request, s *session) {
 		a.notFound(w, err)
 		return
 	}
-	if s.Role == "admin" {
-		http.Redirect(w, r, a.panel+"/g/"+id, http.StatusSeeOther)
-	} else {
-		http.Redirect(w, r, "/cabinet/g/"+id, http.StatusSeeOther)
-	}
+	http.Redirect(w, r, a.panel+"/g/"+id, http.StatusSeeOther)
 }
 
 func (a *app) history(tagID int64) ([]change, error) {
@@ -610,6 +607,7 @@ func (a *app) setKV(k, v string) {
 
 func (a *app) data(r *http.Request, s *session, title string, d map[string]any) map[string]any {
 	d["Title"], d["User"], d["CSRF"], d["P"], d["Home"] = title, s.Email, s.CSRF, a.panel, a.home(s.Role)
+	d["Path"] = r.URL.Path
 	d["TG"] = map[string]bool{"Enabled": a.tg != nil, "Linked": s.TGLinked}
 	if e := errMsgs[r.URL.Query().Get("err")]; e != "" {
 		d["Error"] = e
@@ -671,6 +669,18 @@ func daysBetween(from, to string) int {
 	f, _ := time.Parse(time.DateOnly, from)
 	t, _ := time.Parse(time.DateOnly, to)
 	return int(t.Sub(f).Hours() / 24)
+}
+
+// plural: plural(5, "метка", "метки", "меток") → "5 меток".
+func plural(n int, one, few, many string) string {
+	w := many
+	switch m10, m100 := n%10, n%100; {
+	case m10 == 1 && m100 != 11:
+		w = one
+	case m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14):
+		w = few
+	}
+	return fmt.Sprintf("%d %s", n, w)
 }
 
 func ruDate(s string) string { // 2027-10-15 → 15.10.2027

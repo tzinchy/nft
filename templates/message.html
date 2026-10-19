@@ -1,6 +1,9 @@
 {{define "content"}}
-<div class="grid min-h-[70vh] place-content-center justify-items-center gap-4 text-center">
-  <svg class="size-14 text-orange-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
-  <h1 class="text-2xl font-bold">{{.Title}}</h1>
+<div class="mx-auto grid min-h-[calc(100dvh-8rem)] max-w-md place-content-center justify-items-center gap-5 px-4 text-center">
+  <span class="ripple relative grid size-24 place-items-center">
+    <span class="absolute inset-0 rounded-full border-2 border-primary/40"></span>
+    <span class="relative grid size-14 place-items-center rounded-full bg-primary text-primary-foreground [&>svg]:size-7">{{template "i-nfc"}}</span>
+  </span>
+  <h1 class="font-display text-2xl font-semibold">{{.Title}}</h1>
 </div>
 {{end}}

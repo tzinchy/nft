@@ -1,0 +1,105 @@
+{{define "content"}}
+<section class="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-6 pb-16 sm:px-6 md:grid-cols-[1.1fr_1fr] md:pt-14 md:pb-24">
+  <div class="flex flex-col items-start gap-6">
+    <h1 class="font-display text-[2.4rem] leading-[1.05] font-semibold tracking-tight sm:text-5xl lg:text-6xl">Отзывы с одного касания</h1>
+    <p class="max-w-xl text-lg leading-relaxed text-muted-foreground">Наклейка с NFC-меткой на кассе или столе. Гость прикладывает телефон и сразу попадает на страницу отзывов о вашем заведении — без QR-кодов, приложений и поиска по картам.</p>
+    <div class="flex flex-wrap gap-3">
+      {{if .Contact}}<a href="{{.Contact}}" class="btn" data-size="lg" rel="noopener">{{template "i-send"}}Подключить заведение</a>{{end}}
+      <a href="#how" class="btn"{{if .Contact}} data-variant="outline"{{end}} data-size="lg">Как это работает</a>
+    </div>
+  </div>
+
+  <div class="relative mx-auto aspect-square w-full max-w-[26rem] overflow-hidden rounded-[2rem] bg-primary text-primary-foreground" aria-hidden="true">
+    <div class="ripple absolute inset-0 grid place-items-center">
+      <span class="absolute size-[92%] rounded-full border-2 border-white/40"></span>
+      <span class="absolute size-[92%] rounded-full border-2 border-white/40"></span>
+      <span class="absolute size-[92%] rounded-full border-2 border-white/40"></span>
+    </div>
+    <div class="absolute inset-0 grid place-items-center">
+      <span class="grid size-28 place-items-center rounded-full bg-white text-[#2440e6] shadow-2xl sm:size-32 [&>svg]:size-12">{{template "i-nfc"}}</span>
+    </div>
+    <div class="absolute inset-x-5 bottom-5 flex items-center gap-3 rounded-2xl bg-white/95 p-3 text-[#1b2230] shadow-lg backdrop-blur sm:inset-x-8 sm:bottom-8">
+      <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e8ecfd] text-[#2440e6] [&>svg]:size-5">{{template "i-map-pin"}}</span>
+      <span class="min-w-0 text-sm leading-tight"><span class="block font-semibold">Кофейня «Зерно»</span><span class="block text-[#5e6878]">Оцените нас — это займёт минуту</span></span>
+      <span class="ml-auto shrink-0 text-base tracking-tight text-[#e8932a]">★★★★★</span>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="border-y bg-card">
+  <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
+    <h2 class="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Как это работает</h2>
+    <ol class="mt-10 grid gap-8 md:grid-cols-3">
+      <li class="flex flex-col gap-3">
+        <span class="font-display text-4xl font-semibold text-primary">1</span>
+        <h3 class="text-lg font-semibold">Клеим метку</h3>
+        <p class="text-muted-foreground">Записываем в NFC-наклейку постоянную ссылку и размещаем её там, где гость ждёт: на кассе, столе, ресепшене.</p>
+      </li>
+      <li class="flex flex-col gap-3">
+        <span class="font-display text-4xl font-semibold text-primary">2</span>
+        <h3 class="text-lg font-semibold">Гость прикладывает телефон</h3>
+        <p class="text-muted-foreground">iPhone и Android открывают ссылку сами — ничего не нужно устанавливать или сканировать.</p>
+      </li>
+      <li class="flex flex-col gap-3">
+        <span class="font-display text-4xl font-semibold text-primary">3</span>
+        <h3 class="text-lg font-semibold">Попадает куда нужно</h3>
+        <p class="text-muted-foreground">На страницу отзывов в Яндекс Картах или 2ГИС, в меню, Telegram-канал или на сайт — куда решите вы.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:items-center md:py-20">
+  <div class="flex flex-col gap-4">
+    <h2 class="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Наклейка одна, а вести можно куда угодно</h2>
+    <p class="text-muted-foreground">В метке записан адрес нашего сервиса, а не Яндекса. Поменялась карточка заведения, хотите собирать отзывы в 2ГИС или временно вести на акцию — мы меняем назначение в панели. Наклейка остаётся на месте, перепрошивать её не нужно.</p>
+  </div>
+  <div class="card">
+    <section class="flex flex-col gap-3 text-sm">
+      <div class="flex items-center gap-3 rounded-lg bg-muted p-3"><span class="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground [&>svg]:size-4">{{template "i-nfc"}}</span><span><span class="block font-medium">Метка на кассе</span><span class="text-muted-foreground">адрес не меняется никогда</span></span></div>
+      <div class="ml-[1.1rem] h-5 border-l-2 border-dashed border-primary/40"></div>
+      <div class="flex items-center gap-3 rounded-lg bg-muted p-3"><span class="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground [&>svg]:size-4">{{template "i-refresh-cw"}}</span><span><span class="block font-medium">NFC Control</span><span class="text-muted-foreground">решает, куда отправить гостя</span></span></div>
+      <div class="ml-[1.1rem] h-5 border-l-2 border-dashed border-primary/40"></div>
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <span class="rounded-lg border p-2.5 font-medium">Яндекс Карты</span>
+        <span class="rounded-lg border p-2.5 font-medium">2ГИС</span>
+        <span class="rounded-lg border p-2.5 font-medium">Меню</span>
+      </div>
+    </section>
+  </div>
+</section>
+
+<section class="border-y bg-card">
+  <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
+    <h2 class="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Что вы получаете</h2>
+    <div class="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="flex flex-col gap-2"><span class="text-primary [&>svg]:size-6">{{template "i-chart-column"}}</span><h3 class="font-semibold">Статистику касаний</h3><p class="text-sm text-muted-foreground">Сколько гостей приложили телефон, в какие часы и дни, какая точка работает лучше.</p></div>
+      <div class="flex flex-col gap-2"><span class="text-primary [&>svg]:size-6">{{template "i-layout-dashboard"}}</span><h3 class="font-semibold">Личный кабинет</h3><p class="text-sm text-muted-foreground">Все ваши точки и метки в одном месте, с телефона и компьютера.</p></div>
+      <div class="flex flex-col gap-2"><span class="text-primary [&>svg]:size-6">{{template "i-bell"}}</span><h3 class="font-semibold">Отчёты в Telegram</h3><p class="text-sm text-muted-foreground">Раз в неделю — сколько было переходов. Заранее — напоминание о продлении.</p></div>
+      <div class="flex flex-col gap-2"><span class="text-primary [&>svg]:size-6">{{template "i-shield-check"}}</span><h3 class="font-semibold">Защиту от подмены</h3><p class="text-sm text-muted-foreground">Метки блокируются от перезаписи — никто не подменит ссылку своим телефоном.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1fr_1.2fr] md:py-20">
+  <div class="flex flex-col gap-4">
+    <h2 class="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Стоимость</h2>
+    <p class="font-display text-5xl font-semibold tracking-tight">1 499 ₽<span class="ml-2 font-sans text-lg font-normal text-muted-foreground">в год</span></p>
+    <p class="text-muted-foreground">Обслуживание меток, смена ссылок, статистика и личный кабинет. Если подписка закончится, метки не отключатся сразу — мы напомним заранее.</p>
+    {{if .Contact}}<a href="{{.Contact}}" class="btn self-start" data-size="lg" rel="noopener">{{template "i-send"}}Подключить заведение</a>{{end}}
+  </div>
+  <div class="accordion">
+    <details class="group"><summary>На каких телефонах работает?</summary><section><p class="text-muted-foreground">На всех современных iPhone (с XS и новее — без лишних действий) и на Android с включённым NFC. Это практически все смартфоны последних лет.</p></section></details>
+    <details class="group"><summary>А если у гостя нет NFC?</summary><section><p class="text-muted-foreground">Рядом с меткой можно разместить QR-код с тем же адресом — он ведёт туда же и попадает в ту же статистику.</p></section></details>
+    <details class="group"><summary>Можно поменять, куда ведёт метка?</summary><section><p class="text-muted-foreground">Да, в любой момент и сколько угодно раз. Наклейку при этом не трогаем.</p></section></details>
+    <details class="group"><summary>Сколько служит метка?</summary><section><p class="text-muted-foreground">Годами: внутри нет батарейки, метка получает питание от телефона в момент касания.</p></section></details>
+  </div>
+</section>
+
+<footer class="border-t">
+  <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6">
+    <span>NFC Control</span>
+    <a href="/cabinet/" class="hover:text-foreground">Вход для клиентов</a>
+  </div>
+</footer>
+{{end}}

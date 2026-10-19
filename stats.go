@@ -15,7 +15,8 @@ const mskOffset = 3 * 3600
 type bar struct {
 	Label string
 	Value int
-	Style template.CSS // высота/ширина столбика
+	Pct   int          // доля от периода (для устройств)
+	Color template.CSS // цвет категории (для устройств)
 }
 
 type topTag struct {
@@ -45,8 +46,11 @@ func periodDays(r *http.Request) int {
 // stats: scope "tag" или "business", id — метки или предприятия.
 func (a *app) stats(scope string, id int64, days int) (stats, error) {
 	where := "c.tag_id = ?"
-	if scope == "business" {
+	switch scope {
+	case "business":
 		where = "c.tag_id IN (SELECT t.id FROM tags t JOIN locations l ON l.id = t.location_id WHERE l.business_id = ?)"
+	case "all":
+		where = "? IS NOT NULL" // все метки; id игнорируется
 	}
 	now := a.now().In(msk)
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, msk)
@@ -110,20 +114,16 @@ func (a *app) stats(scope string, id int64, days int) (stats, error) {
 		{Label: "Другие", Value: st.Period - dev["ios"] - dev["android"]},
 	}
 
-	scaleHeight(st.Daily)
-	scaleHeight(st.Hours)
-	scaleHeight(st.Weekdays)
 	for i := range st.Devices {
-		pct := 0
+		st.Devices[i].Color = template.CSS(fmt.Sprintf("var(--chart-%d)", i+1))
 		if st.Period > 0 {
-			pct = st.Devices[i].Value * 100 / st.Period
+			st.Devices[i].Pct = st.Devices[i].Value * 100 / st.Period
 		}
-		st.Devices[i].Style = template.CSS(fmt.Sprintf("width:%d%%", pct))
 	}
 
-	if scope == "business" {
+	if scope != "tag" {
 		rows, err := a.db.Query(`SELECT t.id, t.name, l.name, COUNT(*) FROM tag_clicks c JOIN tags t ON t.id = c.tag_id JOIN locations l ON l.id = t.location_id
-			WHERE c.created_at >= ? AND l.business_id = ? GROUP BY t.id ORDER BY 4 DESC, t.id LIMIT 10`, from.Unix(), id)
+			WHERE c.created_at >= ? AND (? = 0 OR l.business_id = ?) GROUP BY t.id ORDER BY 4 DESC, t.id LIMIT 10`, from.Unix(), id, id)
 		if err != nil {
 			return st, err
 		}
@@ -135,18 +135,4 @@ func (a *app) stats(scope string, id int64, days int) (stats, error) {
 		}
 	}
 	return st, nil
-}
-
-func scaleHeight(bars []bar) {
-	top := 0
-	for _, b := range bars {
-		top = max(top, b.Value)
-	}
-	for i := range bars {
-		h := 0
-		if top > 0 && bars[i].Value > 0 {
-			h = max(bars[i].Value*100/top, 3) // ненулевой день всегда виден
-		}
-		bars[i].Style = template.CSS(fmt.Sprintf("height:%d%%", h))
-	}
 }

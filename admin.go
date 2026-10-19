@@ -40,10 +40,12 @@ func (a *app) dashboard(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, a.home(s.Role), http.StatusSeeOther)
 		return
 	}
+	since := a.now().AddDate(0, 0, -30).Unix()
 	rows, err := a.db.Query(`SELECT b.id, b.name, b.plan, b.starts_at, b.expires_at, b.price,
 		(SELECT COUNT(*) FROM locations l WHERE l.business_id = b.id),
-		(SELECT COUNT(*) FROM tags t JOIN locations l ON l.id = t.location_id WHERE l.business_id = b.id)
-		FROM businesses b ORDER BY b.expires_at, b.name`)
+		(SELECT COUNT(*) FROM tags t JOIN locations l ON l.id = t.location_id WHERE l.business_id = b.id),
+		(SELECT COUNT(*) FROM tag_clicks c JOIN tags t ON t.id = c.tag_id JOIN locations l ON l.id = t.location_id WHERE l.business_id = b.id AND c.created_at >= ?)
+		FROM businesses b ORDER BY b.expires_at, b.name`, since)
 	if err != nil {
 		a.fail(w, err)
 		return
@@ -52,12 +54,29 @@ func (a *app) dashboard(w http.ResponseWriter, r *http.Request) {
 	var list []business
 	for rows.Next() {
 		var b business
-		rows.Scan(&b.ID, &b.Name, &b.Plan, &b.StartsAt, &b.ExpiresAt, &b.Price, &b.Locations, &b.Tags)
+		rows.Scan(&b.ID, &b.Name, &b.Plan, &b.StartsAt, &b.ExpiresAt, &b.Price, &b.Locations, &b.Tags, &b.Taps30)
 		b.Status = subStatus(b.ExpiresAt, a.now())
 		list = append(list, b)
 	}
-	a.render(w, 200, "dashboard", a.data(r, s, "Предприятия", map[string]any{
-		"Businesses": list,
+	if err := rows.Err(); err != nil {
+		a.fail(w, err)
+		return
+	}
+	attention := 0
+	for _, b := range list {
+		if b.Status.Class != "badge-ok" {
+			attention++
+		}
+	}
+	var activeTags int
+	a.db.QueryRow(`SELECT COUNT(*) FROM tags WHERE active = 1`).Scan(&activeTags)
+	st, err := a.stats("all", 0, periodDays(r))
+	if err != nil {
+		a.fail(w, err)
+		return
+	}
+	a.render(w, 200, "dashboard", a.data(r, s, "Обзор", map[string]any{
+		"Businesses": list, "S": st, "ActiveTags": activeTags, "Attention": attention,
 		"DefaultExp": a.now().In(msk).AddDate(1, 0, 0).Format(time.DateOnly),
 	}))
 }
@@ -303,7 +322,7 @@ func (a *app) updateTag(w http.ResponseWriter, r *http.Request, s *session) {
 		a.back(w, r, back, "url")
 		return
 	}
-	if err := a.saveTag(id, 0, s.UserID, name, dst, r.PostFormValue("active") == "1"); err != nil {
+	if err := a.saveTag(id, s.UserID, name, dst, r.PostFormValue("active") == "1"); err != nil {
 		a.notFound(w, err)
 		return
 	}

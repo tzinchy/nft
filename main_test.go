@@ -137,7 +137,7 @@ func TestAdminFlow(t *testing.T) {
 		t.Fatalf("clicks %s", n)
 	}
 
-	for _, p := range []string{"/panel/", "/panel/b/1", "/panel/b/1?days=7", "/panel/l/1", "/panel/g/1", "/panel/g/1?days=90", "/guide"} {
+	for _, p := range []string{"/panel/", "/panel/b/1", "/panel/b/1?days=7", "/panel/l/1", "/panel/g/1", "/panel/g/1?days=90"} {
 		if r, body := admin.get(p); r.StatusCode != 200 || strings.Contains(body, "ZgotmplZ") {
 			t.Fatalf("GET %s: %d", p, r.StatusCode)
 		}
@@ -202,16 +202,17 @@ func TestCabinet(t *testing.T) {
 	if r, _ := c.get("/cabinet/g/2"); r.StatusCode != 404 {
 		t.Fatalf("foreign tag visible: %d", r.StatusCode)
 	}
-	c.post("/cabinet/g/2", url.Values{"url": {"https://hacked.example"}, "active": {"1"}})
-	if e.val(`SELECT destination_url FROM tags WHERE id = 2`) != "https://other.example" {
-		t.Fatal("client changed foreign tag")
+	// клиент только смотрит: менять ссылки (свои и чужие) не может
+	for _, id := range []string{"1", "2"} {
+		if r := c.post("/cabinet/g/"+id, url.Values{"url": {"https://hacked.example"}, "active": {"1"}}); r.StatusCode != 405 {
+			t.Fatalf("client tag update allowed: %d", r.StatusCode)
+		}
 	}
-	c.post("/cabinet/g/1", url.Values{"url": {"https://2gis.ru/new"}, "active": {"1"}})
-	if e.val(`SELECT destination_url FROM tags WHERE id = 1`) != "https://2gis.ru/new" || e.val(`SELECT name FROM tags WHERE id = 1`) != "Касса" {
-		t.Fatal("client tag update")
+	if e.val(`SELECT COUNT(*) FROM tags WHERE destination_url = 'https://hacked.example'`) != "0" {
+		t.Fatal("client changed tag")
 	}
-	if e.val(`SELECT u.email FROM tag_history h JOIN users u ON u.id = h.user_id`) != "owner@barber.ru" {
-		t.Fatal("client change not in history")
+	if r, body := c.get("/cabinet/g/1"); r.StatusCode != 200 || strings.Contains(body, `name="url"`) {
+		t.Fatalf("client tag page must be read-only: %d", r.StatusCode)
 	}
 	// клиент в админку не попадает
 	if r, _ := c.get("/panel/b/1"); r.StatusCode != 303 {
@@ -463,5 +464,13 @@ func TestPassword(t *testing.T) {
 	h := hashPassword("secret123")
 	if !checkPassword(h, "secret123") || checkPassword(h, "secret124") || strings.Contains(h, "secret") {
 		t.Fatal("password hashing broken")
+	}
+}
+
+func TestPlural(t *testing.T) {
+	for n, want := range map[int]string{1: "1 метка", 2: "2 метки", 5: "5 меток", 11: "11 меток", 12: "12 меток", 21: "21 метка", 22: "22 метки", 0: "0 меток"} {
+		if got := plural(n, "метка", "метки", "меток"); got != want {
+			t.Errorf("%d: %s", n, got)
+		}
 	}
 }

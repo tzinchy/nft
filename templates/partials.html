@@ -1,105 +1,157 @@
-{{define "stats"}}
-<div class="mt-8 mb-3 flex items-center justify-between">
-  <h2 class="text-sm font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Статистика</h2>
-  <div class="flex gap-1 rounded-xl bg-white p-1 text-sm shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-    {{range periods}}<a href="?days={{.}}" class="rounded-lg px-2.5 py-1 {{if eq . $.Days}}bg-blue-600 font-semibold text-white{{else}}text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800{{end}}">{{.}} дн.</a>{{end}}
-  </div>
-</div>
-<div class="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
-  <div class="card"><div class="text-2xl font-bold">{{.Period}}</div><div class="text-xs text-zinc-500">за {{.Days}} дн.</div></div>
-  <div class="card"><div class="text-2xl font-bold">{{.Unique}}</div><div class="text-xs text-zinc-500">уникальных</div></div>
-  <div class="card"><div class="text-2xl font-bold">{{.Today}}</div><div class="text-xs text-zinc-500">сегодня</div></div>
-  <div class="card"><div class="text-2xl font-bold">{{.AllTime}}</div><div class="text-xs text-zinc-500">за всё время</div></div>
-</div>
-<p class="mt-2 text-sm text-zinc-500">Последний переход: {{if .Last}}{{dt .Last}}{{else}}—{{end}}</p>
-
-<div class="card mt-3">
-  <div class="mb-3 text-sm font-medium text-zinc-500">По дням</div>
-  <div class="flex h-32 items-end gap-px">{{range .Daily}}<div class="flex-1 rounded-t bg-blue-500 hover:bg-blue-400" style="{{.Style}}" title="{{.Label}}: {{.Value}}"></div>{{end}}</div>
-  <div class="mt-1 flex justify-between text-xs text-zinc-500"><span>{{(index .Daily 0).Label}}</span><span>{{(last .Daily).Label}}</span></div>
-</div>
-
-<div class="mt-3 grid gap-3 sm:grid-cols-2">
-  <div class="card">
-    <div class="mb-3 text-sm font-medium text-zinc-500">По часам (МСК)</div>
-    <div class="flex h-24 items-end gap-px">{{range .Hours}}<div class="flex-1 rounded-t bg-violet-500 hover:bg-violet-400" style="{{.Style}}" title="{{.Label}}:00 — {{.Value}}"></div>{{end}}</div>
-    <div class="mt-1 flex justify-between text-xs text-zinc-500"><span>00</span><span>12</span><span>23</span></div>
-  </div>
-  <div class="card">
-    <div class="mb-3 text-sm font-medium text-zinc-500">По дням недели</div>
-    <div class="flex h-24 items-end gap-1">{{range .Weekdays}}<div class="flex-1 rounded-t bg-emerald-500 hover:bg-emerald-400" style="{{.Style}}" title="{{.Label}}: {{.Value}}"></div>{{end}}</div>
-    <div class="mt-1 flex gap-1 text-center text-xs text-zinc-500">{{range .Weekdays}}<span class="flex-1">{{.Label}}</span>{{end}}</div>
-  </div>
-</div>
-
-<div class="card mt-3 space-y-2">
-  <div class="text-sm font-medium text-zinc-500">Устройства</div>
-  {{range .Devices}}
-  <div>
-    <div class="flex justify-between text-sm"><span>{{.Label}}</span><span class="text-zinc-500">{{.Value}}</span></div>
-    <div class="mt-1 h-2 rounded-full bg-zinc-100 dark:bg-zinc-800"><div class="h-2 rounded-full bg-blue-500" style="{{.Style}}"></div></div>
-  </div>
-  {{end}}
-</div>
-
-{{if .Top}}
-<div class="card mt-3">
-  <div class="mb-2 text-sm font-medium text-zinc-500">Топ меток за {{.Days}} дн.</div>
-  <ol class="space-y-1 text-sm">{{range $i, $t := .Top}}<li class="flex justify-between gap-3"><span class="truncate">{{$t.Name}} <span class="text-zinc-500">· {{$t.Location}}</span></span><span class="font-semibold">{{$t.Clicks}}</span></li>{{end}}</ol>
-</div>
+{{define "logo"}}
+<a href="{{if and .User (not .Public)}}{{.Home}}{{else}}/{{end}}" class="flex items-center gap-2.5 font-display text-[15px] font-semibold tracking-tight">
+  <span class="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground [&>svg]:size-[18px]">{{template "i-nfc"}}</span>
+  NFC Control
+</a>
 {{end}}
+
+{{define "nav"}}
+<a class="nav-link" href="{{.Home}}"{{if eq .Path .Home}} aria-current="page"{{end}}>{{template "i-layout-dashboard"}}Обзор</a>
+<a class="nav-link" href="/">{{template "i-nfc"}}О сервисе</a>
+{{end}}
+
+{{define "flash"}}
+{{if .Error}}<div class="alert mb-5" data-variant="destructive">{{template "i-circle-alert"}}<h2>{{.Error}}</h2></div>{{end}}
+{{if .Notice}}<div class="alert mb-5">{{template "i-check"}}<h2>{{.Notice}}</h2></div>{{end}}
 {{end}}
 
 {{define "telegram"}}
 {{if .TG.Enabled}}
-<div class="card mt-3 flex items-center justify-between gap-3">
-  <div>
-    <div class="font-semibold">Уведомления в Telegram</div>
-    <p class="text-sm text-zinc-500">{{if .TG.Linked}}Привязан ✓{{else}}Не привязан{{end}}</p>
+<form method="post" action="{{.Home}}telegram{{if .TG.Linked}}/off{{end}}" class="flex items-center justify-between gap-2 rounded-lg bg-muted/70 px-3 py-2.5">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <span class="flex min-w-0 items-center gap-2 text-sm [&>svg]:size-4 [&>svg]:shrink-0">{{template "i-send"}}<span class="truncate">{{if .TG.Linked}}Telegram подключён{{else}}Уведомления в Telegram{{end}}</span></span>
+  <button class="btn" data-variant="{{if .TG.Linked}}ghost{{else}}outline{{end}}" data-size="xs">{{if .TG.Linked}}Отключить{{else}}Подключить{{end}}</button>
+</form>
+{{end}}
+{{end}}
+
+{{define "period"}}
+<nav class="inline-flex shrink-0 rounded-lg bg-muted p-0.5 text-xs font-medium" aria-label="Период">
+  {{range periods}}<a href="?days={{.}}" class="rounded-md px-2.5 py-1 {{if eq . $.Days}}bg-card text-foreground shadow-xs{{else}}text-muted-foreground hover:text-foreground{{end}}"{{if eq . $.Days}} aria-current="true"{{end}}>{{.}} дн.</a>{{end}}
+</nav>
+{{end}}
+
+{{define "kpi"}}
+<div class="card" data-size="sm"><section class="flex flex-col gap-1">
+  <span class="text-sm text-muted-foreground">{{.label}}</span>
+  <span class="kpi">{{.value}}</span>
+</section></div>
+{{end}}
+
+{{define "stats-kpis"}}
+<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+  {{template "kpi" (dict "label" (printf "Переходов за %d дн." .Days) "value" .Period)}}
+  {{template "kpi" (dict "label" "Уникальных гостей" "value" .Unique)}}
+  {{template "kpi" (dict "label" "Сегодня" "value" .Today)}}
+  {{template "kpi" (dict "label" "За всё время" "value" .AllTime)}}
+</div>
+<p class="mt-2 text-sm text-muted-foreground">Последний переход: {{if .Last}}{{dt .Last}}{{else}}ещё не было{{end}}</p>
+{{end}}
+
+{{define "stats-charts"}}
+<div class="card">
+  <header>
+    <h2>Переходы по дням</h2>
+    <p>Касания меток за последние {{.Days}} дней, по московскому времени</p>
+    <div class="card-action">{{template "period" .}}</div>
+  </header>
+  <section>
+    {{if .Period}}<div class="chart-box h-56 sm:h-64"><canvas data-bars="{{json .Daily}}" data-kind="area" aria-label="Переходы по дням"></canvas></div>
+    {{else}}<div class="grid h-40 place-items-center rounded-lg border border-dashed text-center text-sm text-muted-foreground"><p class="max-w-xs">За этот период переходов нет. Они появятся, когда гости начнут прикладывать телефоны к меткам.</p></div>{{end}}
+  </section>
+</div>
+
+{{if .Period}}
+<div class="grid gap-4 md:grid-cols-2">
+  <div class="card">
+    <header><h2>По часам</h2><p>Когда гости чаще всего прикладывают телефон</p></header>
+    <section><div class="chart-box h-44"><canvas data-bars="{{json .Hours}}" data-kind="bar" aria-label="Переходы по часам"></canvas></div></section>
   </div>
-  <form method="post" action="{{.Home}}telegram{{if .TG.Linked}}/off{{end}}">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    <button class="btn-ghost {{if not .TG.Linked}}text-blue-600 dark:text-blue-400{{end}}">{{if .TG.Linked}}Отвязать{{else}}Привязать{{end}}</button>
-  </form>
+  <div class="card">
+    <header><h2>По дням недели</h2><p>Сумма за период</p></header>
+    <section><div class="chart-box h-44"><canvas data-bars="{{json .Weekdays}}" data-kind="bar" aria-label="Переходы по дням недели"></canvas></div></section>
+  </div>
+</div>
+
+<div class="grid gap-4 {{if .Top}}md:grid-cols-2{{end}}">
+  <div class="card">
+    <header><h2>Устройства</h2><p>С каких телефонов приходят гости</p></header>
+    <section class="flex flex-col gap-4">
+      <div class="flex h-3 gap-0.5 overflow-hidden rounded-full bg-muted">{{range .Devices}}{{if .Value}}<div style="flex: {{.Value}} 1 0%; background: {{.Color}}"></div>{{end}}{{end}}</div>
+      <ul class="flex flex-col gap-2 text-sm">
+        {{range .Devices}}<li class="flex items-center gap-2"><span class="size-2.5 shrink-0 rounded-[3px]" style="background: {{.Color}}"></span><span class="flex-1">{{.Label}}</span><span class="font-medium">{{.Value}}</span><span class="w-10 text-right text-muted-foreground">{{.Pct}}%</span></li>{{end}}
+      </ul>
+    </section>
+  </div>
+  {{if .Top}}
+  <div class="card">
+    <header><h2>Лучшие метки</h2><p>По числу переходов за {{.Days}} дн.</p></header>
+    <section>
+      <ol class="flex flex-col divide-y text-sm">
+        {{range .Top}}<li class="flex items-center justify-between gap-3 py-2"><span class="min-w-0 truncate">{{.Name}} <span class="text-muted-foreground">({{.Location}})</span></span><span class="font-medium">{{.Clicks}}</span></li>{{end}}
+      </ol>
+    </section>
+  </div>
+  {{end}}
 </div>
 {{end}}
 {{end}}
 
-{{define "history"}}
-<h2 class="h2">История ссылок</h2>
-<div class="space-y-3">
-{{range .History}}
-  <form method="post" action="{{$.RevertBase}}{{.ID}}" class="card">
-    <input type="hidden" name="csrf" value="{{$.CSRF}}">
-    <p class="text-sm text-zinc-500 dark:text-zinc-400">{{dt .At}} · {{.Author}}</p>
-    <p class="mt-1 text-sm break-all"><span class="text-zinc-500 line-through">{{.Old}}</span><br>→ {{.New}}</p>
-    <button class="btn-ghost mt-2 -ml-3 text-blue-600 dark:text-blue-400">Вернуть прежнюю</button>
-  </form>
-{{else}}
-  <p class="card text-zinc-500 dark:text-zinc-400">Ссылка ещё не менялась.</p>
+{{define "stats"}}
+<div class="flex flex-col gap-4">
+  {{template "stats-kpis" .}}
+  {{template "stats-charts" .}}
+</div>
 {{end}}
+
+{{define "history"}}
+<div class="card">
+  <header><h2>История ссылок</h2><p>Кто и когда менял, куда ведёт метка</p></header>
+  {{if .History}}
+  <ol class="flex flex-col divide-y border-t">
+  {{range .History}}
+    <li><form method="post" action="{{$.RevertBase}}{{.ID}}" class="flex flex-col gap-2 px-6 py-4">
+      <input type="hidden" name="csrf" value="{{$.CSRF}}">
+      <p class="text-xs text-muted-foreground">{{dt .At}}, {{.Author}}</p>
+      <p class="text-sm break-all"><span class="text-muted-foreground line-through">{{.Old}}</span><br>{{.New}}</p>
+      <button class="btn self-start" data-variant="outline" data-size="xs">{{template "i-refresh-cw"}}Вернуть прежнюю</button>
+    </form></li>
+  {{end}}
+  </ol>
+  {{else}}
+  <section><p class="text-sm text-muted-foreground">Ссылка ещё не менялась.</p></section>
+  {{end}}
 </div>
 {{end}}
 
 {{define "nfcurl"}}
-<h2 class="h2">Адрес для записи в NFC</h2>
-<button type="button" data-copy="{{.}}" class="card w-full cursor-pointer text-left">
-  <span class="block font-mono font-semibold break-all text-blue-600 dark:text-blue-400">{{.}}</span>
-  <span data-hint class="mt-1 block text-xs text-zinc-500">нажмите, чтобы скопировать</span>
+<button type="button" data-copy="{{.}}" class="copy-box">
+  <span class="flex items-start gap-3">
+    <span class="mt-0.5 text-primary [&>svg]:size-4">{{template "i-copy"}}</span>
+    <span class="min-w-0">
+      <span class="block font-medium break-all text-foreground">{{.}}</span>
+      <span data-hint class="mt-1 block text-xs text-muted-foreground">Нажмите, чтобы скопировать, и запишите этот адрес в метку</span>
+    </span>
+  </span>
 </button>
-<a href="/guide" class="back mt-2">Как записать метку →</a>
 {{end}}
 
 {{define "payments"}}
-{{if .}}
-<h2 class="h2">Платежи</h2>
-<div class="card divide-y divide-zinc-200 py-1 dark:divide-zinc-800">
-{{range .}}
-  <div class="flex items-center justify-between gap-3 py-2 text-sm">
-    <span>{{dt .CreatedAt}} · {{.Amount}} ₽ <span class="text-zinc-500">{{if eq .Provider "manual"}}вручную{{else}}ЮKassa{{end}}</span></span>
-    {{with payStatus .Status}}<span class="{{.Class}}">{{.Label}}</span>{{end}}
-  </div>
-{{end}}
+<div class="card">
+  <header><h2>Платежи</h2></header>
+  {{if .}}
+  <ul class="flex flex-col divide-y border-t">
+  {{range .}}
+    <li class="flex items-center justify-between gap-3 px-6 py-3 text-sm">
+      <span><span class="font-medium">{{.Amount}} ₽</span> <span class="text-muted-foreground">{{dt .CreatedAt}}, {{if eq .Provider "manual"}}вручную{{else}}онлайн{{end}}</span></span>
+      {{with payStatus .Status}}<span class="{{.Class}}">{{.Label}}</span>{{end}}
+    </li>
+  {{end}}
+  </ul>
+  {{else}}
+  <section><p class="text-sm text-muted-foreground">Платежей пока не было.</p></section>
+  {{end}}
 </div>
 {{end}}
-{{end}}
+
+{{define "crumbs"}}<nav class="crumbs" aria-label="Навигация">{{range $i, $c := .}}{{if $i}}{{template "i-chevron-right"}}{{end}}{{if $c.href}}<a href="{{$c.href}}">{{$c.label}}</a>{{else}}<span class="text-foreground">{{$c.label}}</span>{{end}}{{end}}</nav>{{end}}

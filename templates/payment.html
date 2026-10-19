@@ -1,18 +1,18 @@
 {{define "content"}}
-<div class="mt-16 text-center">
+<div class="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center">
   {{if eq .Status "succeeded"}}
-    <div class="text-5xl">✅</div>
-    <h1 class="mt-4 text-2xl font-bold">Оплата прошла</h1>
-    <p class="mt-2 text-zinc-500">Обслуживание продлено до {{date .B.ExpiresAt}}.</p>
+    <span class="grid size-14 place-items-center rounded-full bg-[var(--ok-bg)] text-[var(--ok)] [&>svg]:size-7">{{template "i-check"}}</span>
+    <h1 class="page-title">Оплата прошла</h1>
+    <p class="text-muted-foreground">Обслуживание продлено до {{date .B.ExpiresAt}}.</p>
   {{else if eq .Status "pending"}}
-    <div class="text-5xl">⏳</div>
-    <h1 class="mt-4 text-2xl font-bold">Ждём подтверждения оплаты</h1>
-    <p class="mt-2 text-zinc-500">Обычно это занимает до минуты. Обновите страницу чуть позже.</p>
+    <span class="grid size-14 place-items-center rounded-full bg-[var(--warn-bg)] text-[var(--warn)] [&>svg]:size-7">{{template "i-refresh-cw"}}</span>
+    <h1 class="page-title">Ждём подтверждения</h1>
+    <p class="text-muted-foreground">Обычно это занимает до минуты. Обновите страницу чуть позже.</p>
   {{else}}
-    <div class="text-5xl">✖️</div>
-    <h1 class="mt-4 text-2xl font-bold">Оплата не прошла</h1>
-    <p class="mt-2 text-zinc-500">Деньги не списаны. Можно попробовать ещё раз.</p>
+    <span class="grid size-14 place-items-center rounded-full bg-[var(--bad-bg)] text-[var(--bad)] [&>svg]:size-7">{{template "i-circle-alert"}}</span>
+    <h1 class="page-title">Оплата не прошла</h1>
+    <p class="text-muted-foreground">Деньги не списаны. Попробуйте ещё раз.</p>
   {{end}}
-  <a href="/cabinet/" class="btn mt-6 inline-block w-auto">Вернуться в кабинет</a>
+  <a href="/cabinet/" class="btn mt-2">Вернуться в кабинет</a>
 </div>
 {{end}}
