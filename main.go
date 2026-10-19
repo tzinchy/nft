@@ -253,6 +253,7 @@ func newApp(c config) (*app, http.Handler, error) {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(static)))
 	mux.HandleFunc("GET /t/{token}", a.redirect)
 	mux.HandleFunc("POST /pay/yookassa", a.ykWebhook)
+	mux.HandleFunc("GET /guide", a.guide)
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		a.message(w, 404, "Страница не найдена")
 	})
@@ -371,6 +372,15 @@ func clientIP(r *http.Request) string {
 	}
 	host, _, _ := net.SplitHostPort(r.RemoteAddr)
 	return host
+}
+
+// guide — инструкция по записи метки, открыта без входа (метки могут ставить сотрудники клиента).
+func (a *app) guide(w http.ResponseWriter, r *http.Request) {
+	d := map[string]any{"Title": "Как записать NFC-метку"}
+	if s := a.session(r); s != nil {
+		d = a.data(r, s, "Как записать NFC-метку", d)
+	}
+	a.render(w, 200, "guide", d)
 }
 
 // --- вход ---

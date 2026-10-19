@@ -137,7 +137,7 @@ func TestAdminFlow(t *testing.T) {
 		t.Fatalf("clicks %s", n)
 	}
 
-	for _, p := range []string{"/panel/", "/panel/b/1", "/panel/b/1?days=7", "/panel/l/1", "/panel/g/1", "/panel/g/1?days=90"} {
+	for _, p := range []string{"/panel/", "/panel/b/1", "/panel/b/1?days=7", "/panel/l/1", "/panel/g/1", "/panel/g/1?days=90", "/guide"} {
 		if r, body := admin.get(p); r.StatusCode != 200 || strings.Contains(body, "ZgotmplZ") {
 			t.Fatalf("GET %s: %d", p, r.StatusCode)
 		}
