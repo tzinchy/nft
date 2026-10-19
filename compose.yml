@@ -1,0 +1,39 @@
+name: nfc-control
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
+      PANEL_PATH: ${PANEL_PATH:-/panel}
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
+      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
+      YOOKASSA_RECEIPT: ${YOOKASSA_RECEIPT:-0}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_API: ${TELEGRAM_API:-https://api.telegram.org}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+    ports:
+      - "127.0.0.1:8080:8080" # наружу только через Caddy
+    volumes:
+      - data:/data
+
+  # HTTPS для прода: docker compose --profile prod up -d
+  caddy:
+    image: caddy:2-alpine
+    profiles: [prod]
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+    depends_on: [app]
+
+volumes:
+  data:
+  caddy:

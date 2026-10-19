@@ -1,0 +1,10 @@
+{{define "content"}}
+<div class="mt-16">
+  <h1 class="mb-6 text-center text-2xl font-bold">{{if .Setup}}Создайте администратора{{else}}Вход{{end}}</h1>
+  <form method="post" action="{{.Action}}" class="card space-y-4">
+    <label class="label">Почта<input class="input" type="email" name="email" autocomplete="username" required autofocus></label>
+    <label class="label">Пароль<input class="input" type="password" name="password" {{if .Setup}}minlength="8" autocomplete="new-password" placeholder="минимум 8 символов"{{else}}autocomplete="current-password"{{end}} required></label>
+    <button class="btn">{{if .Setup}}Создать{{else}}Войти{{end}}</button>
+  </form>
+</div>
+{{end}}

@@ -1,0 +1,6 @@
+nfc
+nfc-linux
+*.db
+*.db-*
+*.log
+.env

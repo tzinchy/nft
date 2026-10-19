@@ -1,0 +1,54 @@
+{{define "content"}}
+<h1 class="text-2xl font-bold">{{.B.Name}}</h1>
+
+<div class="card mt-4">
+  <div class="flex items-center justify-between gap-3"><span class="font-semibold">{{.B.Plan}}</span><span class="{{.B.Status.Class}}">{{.B.Status.Label}}</span></div>
+  <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Обслуживание действует до {{date .B.ExpiresAt}}</p>
+  {{if .PayEnabled}}
+  <form method="post" action="/cabinet/pay" class="mt-3">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <button class="btn">Продлить на год — {{.B.Price}} ₽</button>
+  </form>
+  {{else}}
+  <p class="mt-3 text-sm text-zinc-500">Для продления свяжитесь с нами.</p>
+  {{end}}
+</div>
+{{template "telegram" .}}
+
+<h2 class="h2">Точки и метки</h2>
+<div class="space-y-3">
+{{range .Locations}}
+  <div class="card">
+    <div class="font-semibold">{{.Name}}</div>
+    {{if .Address}}<p class="text-sm text-zinc-500">{{.Address}}</p>{{end}}
+    <div class="mt-2 divide-y divide-zinc-200 dark:divide-zinc-800">
+    {{range .TagList}}
+      <a href="/cabinet/g/{{.ID}}" class="group flex items-center justify-between gap-3 py-2">
+        <span class="min-w-0"><span class="font-mono text-zinc-400">{{printf "#%03d" .ID}}</span> <span class="font-medium">{{.Name}}</span>
+          {{if .Active}}<span class="badge-ok ml-1">● Активна</span>{{else}}<span class="badge-bad ml-1">Отключена</span>{{end}}
+          <span class="block text-sm text-zinc-500">Переходов: {{.Clicks}}</span></span>
+        <span class="text-2xl text-zinc-400 group-hover:text-blue-500">›</span>
+      </a>
+    {{else}}
+      <p class="py-2 text-sm text-zinc-500">Меток пока нет.</p>
+    {{end}}
+    </div>
+  </div>
+{{else}}
+  <p class="card text-zinc-500 dark:text-zinc-400">Точек пока нет.</p>
+{{end}}
+</div>
+
+{{template "stats" .S}}
+{{template "payments" .Payments}}
+
+<details class="add">
+  <summary>Сменить пароль</summary>
+  <form method="post" action="/cabinet/password" class="space-y-4 px-4 pb-4">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label class="label">Текущий пароль<input class="input" type="password" name="old" autocomplete="current-password" required></label>
+    <label class="label">Новый пароль<input class="input" type="password" name="new" minlength="8" autocomplete="new-password" required></label>
+    <button class="btn">Сменить</button>
+  </form>
+</details>
+{{end}}

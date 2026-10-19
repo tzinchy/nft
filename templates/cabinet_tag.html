@@ -1,0 +1,21 @@
+{{define "content"}}
+<a href="/cabinet/" class="back">← {{.V.BusinessName}}</a>
+<h1 class="mt-2 text-2xl font-bold"><span class="font-mono text-zinc-400">{{printf "#%03d" .V.T.ID}}</span> {{.V.T.Name}}</h1>
+<p class="mt-1 text-zinc-500">{{.V.LocationName}}</p>
+
+<form method="post" action="/cabinet/g/{{.V.T.ID}}" class="card mt-4 space-y-4">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <label class="label">Куда перенаправлять<input class="input" type="url" name="url" value="{{.V.T.URL}}" required></label>
+  <label class="label">Статус
+    <select class="input" name="active">
+      <option value="1"{{if .V.T.Active}} selected{{end}}>● Активна</option>
+      <option value="0"{{if not .V.T.Active}} selected{{end}}>Отключена</option>
+    </select>
+  </label>
+  <button class="btn">Сохранить</button>
+</form>
+
+{{template "nfcurl" .NFCURL}}
+{{template "stats" .S}}
+{{template "history" (dict "History" .History "CSRF" .CSRF "RevertBase" (printf "/cabinet/g/%d/revert/" .V.T.ID))}}
+{{end}}

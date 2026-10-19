@@ -1,0 +1,18 @@
+{{define "content"}}
+<div class="mt-16 text-center">
+  {{if eq .Status "succeeded"}}
+    <div class="text-5xl">✅</div>
+    <h1 class="mt-4 text-2xl font-bold">Оплата прошла</h1>
+    <p class="mt-2 text-zinc-500">Обслуживание продлено до {{date .B.ExpiresAt}}.</p>
+  {{else if eq .Status "pending"}}
+    <div class="text-5xl">⏳</div>
+    <h1 class="mt-4 text-2xl font-bold">Ждём подтверждения оплаты</h1>
+    <p class="mt-2 text-zinc-500">Обычно это занимает до минуты. Обновите страницу чуть позже.</p>
+  {{else}}
+    <div class="text-5xl">✖️</div>
+    <h1 class="mt-4 text-2xl font-bold">Оплата не прошла</h1>
+    <p class="mt-2 text-zinc-500">Деньги не списаны. Можно попробовать ещё раз.</p>
+  {{end}}
+  <a href="/cabinet/" class="btn mt-6 inline-block w-auto">Вернуться в кабинет</a>
+</div>
+{{end}}
