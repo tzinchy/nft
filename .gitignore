@@ -4,3 +4,4 @@ nfc-linux
 *.db-*
 *.log
 .env
+.credentials.txt
