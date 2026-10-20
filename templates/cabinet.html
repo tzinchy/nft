@@ -1,34 +1,16 @@
 {{define "content"}}
 <div class="flex flex-col gap-6">
-  <div>
+  <div class="flex flex-wrap items-center gap-3">
     <h1 class="page-title">{{.B.Name}}</h1>
-    <p class="mt-1 text-muted-foreground">Как гости пользуются вашими NFC-метками</p>
+    <span class="{{.B.Status.Class}}">{{.B.Status.Label}}</span>
   </div>
+  <p class="-mt-4 text-muted-foreground">Обслуживание действует до {{date .B.ExpiresAt}}</p>
 
-  <div class="grid gap-4 lg:grid-cols-[1fr_22rem]">
-    <div class="grid grid-cols-2 gap-3 self-start">
-      {{template "kpi" (dict "label" "Точек" "value" (len .Locations))}}
-      {{template "kpi" (dict "label" "Меток" "value" .TagCount)}}
-      {{template "kpi" (dict "label" "Переходов сегодня" "value" .S.Today)}}
-      {{template "kpi" (dict "label" (printf "За %d дн." .S.Days) "value" .S.Period)}}
-    </div>
-    <div class="card" data-size="sm">
-      <header><h2>Обслуживание</h2><p>{{.B.Plan}}</p></header>
-      <section class="flex flex-col gap-2">
-        <span class="{{.B.Status.Class}} self-start">{{.B.Status.Label}}</span>
-        <span class="text-sm text-muted-foreground">Действует до {{date .B.ExpiresAt}}</span>
-      </section>
-      <footer>
-        {{if .PayEnabled}}
-        <form method="post" action="/cabinet/pay" class="w-full">
-          <input type="hidden" name="csrf" value="{{.CSRF}}">
-          <button class="btn w-full">{{template "i-credit-card"}}Продлить на год за {{.B.Price}} ₽</button>
-        </form>
-        {{else}}
-        <p class="text-sm text-muted-foreground">Чтобы продлить, напишите нам.</p>
-        {{end}}
-      </footer>
-    </div>
+  <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    {{template "kpi" (dict "label" "Точек" "value" (len .Locations))}}
+    {{template "kpi" (dict "label" "Меток" "value" .TagCount)}}
+    {{template "kpi" (dict "label" "Переходов сегодня" "value" .S.Today)}}
+    {{template "kpi" (dict "label" (printf "За %d дн." .S.Days) "value" .S.Period)}}
   </div>
 
   <div class="card !gap-0 !pb-0">
@@ -56,24 +38,5 @@
   </div>
 
   {{template "stats-charts" .S}}
-
-  <div class="grid gap-4 md:grid-cols-2">
-    {{template "payments" .Payments}}
-    <div class="card">
-      <header><h2>Аккаунт</h2><p>{{.User}}</p></header>
-      <section class="flex flex-col gap-3">
-        {{template "telegram" .}}
-        <details class="disclosure rounded-lg border">
-          <summary class="!px-3 !py-2.5">{{template "i-lock"}}Сменить пароль</summary>
-          <form method="post" action="/cabinet/password" class="flex flex-col gap-3 px-3 pb-3">
-            <input type="hidden" name="csrf" value="{{.CSRF}}">
-            <div class="field"><label for="pw-old">Текущий пароль</label><input id="pw-old" type="password" name="old" autocomplete="current-password" required></div>
-            <div class="field"><label for="pw-new">Новый пароль</label><input id="pw-new" type="password" name="new" minlength="8" autocomplete="new-password" required></div>
-            <button class="btn">Сменить пароль</button>
-          </form>
-        </details>
-      </section>
-    </div>
-  </div>
 </div>
 {{end}}

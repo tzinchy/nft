@@ -386,7 +386,7 @@ func TestTelegram(t *testing.T) {
 	if count(100, "%Barber House — истекает 26.10.2026 (через 7 дн.)%") != "1" {
 		t.Fatal("admin digest")
 	}
-	if count(200, "%Продлить: https://tap.example/cabinet/%") != "1" {
+	if count(200, "%Обслуживание меток mymark для «Barber House» истекает 26.10.2026%") != "1" {
 		t.Fatal("client reminder")
 	}
 	if count(200, "%Всего: 3%Касса (Арбат) — 3%") != "1" {

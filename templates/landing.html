@@ -58,7 +58,7 @@
     <section class="flex flex-col gap-3 text-sm">
       <div class="flex items-center gap-3 rounded-lg bg-muted p-3"><span class="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground [&>svg]:size-4">{{template "i-nfc"}}</span><span><span class="block font-medium">Метка на кассе</span><span class="text-muted-foreground">адрес не меняется никогда</span></span></div>
       <div class="ml-[1.1rem] h-5 border-l-2 border-dashed border-primary/40"></div>
-      <div class="flex items-center gap-3 rounded-lg bg-muted p-3"><span class="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground [&>svg]:size-4">{{template "i-refresh-cw"}}</span><span><span class="block font-medium">NFC Control</span><span class="text-muted-foreground">решает, куда отправить гостя</span></span></div>
+      <div class="flex items-center gap-3 rounded-lg bg-muted p-3"><span class="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground [&>svg]:size-4">{{template "i-refresh-cw"}}</span><span><span class="block font-medium">mymark</span><span class="text-muted-foreground">решает, куда отправить гостя</span></span></div>
       <div class="ml-[1.1rem] h-5 border-l-2 border-dashed border-primary/40"></div>
       <div class="grid grid-cols-3 gap-2 text-center">
         <span class="rounded-lg border p-2.5 font-medium">Яндекс Карты</span>
@@ -81,24 +81,44 @@
   </div>
 </section>
 
-<section class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1fr_1.2fr] md:py-20">
+<section id="price" class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1fr_1.15fr] md:items-start md:py-20">
   <div class="flex flex-col gap-4">
     <h2 class="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Стоимость</h2>
-    <p class="font-display text-5xl font-semibold tracking-tight">1 499 ₽<span class="ml-2 font-sans text-lg font-normal text-muted-foreground">в год</span></p>
-    <p class="text-muted-foreground">Обслуживание меток, смена ссылок, статистика и личный кабинет. Если подписка закончится, метки не отключатся сразу — мы напомним заранее.</p>
+    <p class="font-display text-5xl font-semibold tracking-tight">от 1 299 ₽</p>
+    <p class="text-lg">за метку в год, или от 3,56 ₽ в день</p>
+    <p class="text-muted-foreground">Чем больше меток, тем ниже цена за каждую. В стоимость входят обслуживание, смена ссылок, статистика и личный кабинет. Если подписка закончится, метки не отключатся сразу — мы напомним заранее.</p>
     {{if .Contact}}<a href="{{.Contact}}" class="btn self-start" data-size="lg" rel="noopener">{{template "i-send"}}Подключить заведение</a>{{end}}
   </div>
-  <div class="accordion">
-    <details class="group"><summary>На каких телефонах работает?</summary><section><p class="text-muted-foreground">На всех современных iPhone (с XS и новее — без лишних действий) и на Android с включённым NFC. Это практически все смартфоны последних лет.</p></section></details>
-    <details class="group"><summary>А если у гостя нет NFC?</summary><section><p class="text-muted-foreground">Рядом с меткой можно разместить QR-код с тем же адресом — он ведёт туда же и попадает в ту же статистику.</p></section></details>
-    <details class="group"><summary>Можно поменять, куда ведёт метка?</summary><section><p class="text-muted-foreground">Да, в любой момент и сколько угодно раз. Наклейку при этом не трогаем.</p></section></details>
-    <details class="group"><summary>Сколько служит метка?</summary><section><p class="text-muted-foreground">Годами: внутри нет батарейки, метка получает питание от телефона в момент касания.</p></section></details>
+  <div class="card !gap-0 !py-0">
+    <table class="table">
+      <caption class="sr-only">Цена за одну метку в зависимости от количества</caption>
+      <thead><tr><th class="!pl-5 sm:!pl-6">Меток</th><th class="text-right">Цена в год</th><th class="!pr-5 text-right sm:!pr-6">В день</th></tr></thead>
+      <tbody>
+        <tr><td class="!pl-5 !py-3.5 sm:!pl-6">1–24</td><td class="text-right font-medium">1 799 ₽</td><td class="!pr-5 text-right text-muted-foreground sm:!pr-6">4,93 ₽</td></tr>
+        <tr><td class="!pl-5 !py-3.5 sm:!pl-6">25–49</td><td class="text-right font-medium">1 649 ₽</td><td class="!pr-5 text-right text-muted-foreground sm:!pr-6">4,52 ₽</td></tr>
+        <tr><td class="!pl-5 !py-3.5 sm:!pl-6">50–99</td><td class="text-right font-medium">1 499 ₽</td><td class="!pr-5 text-right text-muted-foreground sm:!pr-6">4,11 ₽</td></tr>
+        <tr><td class="!pl-5 !py-3.5 sm:!pl-6">100–199</td><td class="text-right font-medium">1 349 ₽</td><td class="!pr-5 text-right text-muted-foreground sm:!pr-6">3,70 ₽</td></tr>
+        <tr class="bg-accent/60"><td class="!pl-5 !py-3.5 font-medium sm:!pl-6">200 и больше</td><td class="text-right font-semibold text-accent-foreground">1 299 ₽</td><td class="!pr-5 text-right font-medium text-accent-foreground sm:!pr-6">3,56 ₽</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="border-t bg-card">
+  <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1fr_1.15fr] md:py-20">
+    <h2 class="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Частые вопросы</h2>
+    <div class="accordion">
+      <details class="group"><summary>На каких телефонах работает?</summary><section><p class="text-muted-foreground">На всех современных iPhone (с XS и новее — без лишних действий) и на Android с включённым NFC. Это практически все смартфоны последних лет.</p></section></details>
+      <details class="group"><summary>А если у гостя нет NFC?</summary><section><p class="text-muted-foreground">Рядом с меткой можно разместить QR-код с тем же адресом — он ведёт туда же и попадает в ту же статистику.</p></section></details>
+      <details class="group"><summary>Можно поменять, куда ведёт метка?</summary><section><p class="text-muted-foreground">Да, в любой момент и сколько угодно раз. Наклейку при этом не трогаем.</p></section></details>
+      <details class="group"><summary>Сколько служит метка?</summary><section><p class="text-muted-foreground">Годами: внутри нет батарейки, метка получает питание от телефона в момент касания.</p></section></details>
+    </div>
   </div>
 </section>
 
 <footer class="border-t">
   <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6">
-    <span>NFC Control</span>
+    <span>mymark</span>
     <a href="/cabinet/" class="hover:text-foreground">Вход для клиентов</a>
   </div>
 </footer>

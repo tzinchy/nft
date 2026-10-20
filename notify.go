@@ -136,11 +136,11 @@ func (a *app) tgHandle(chat int64, text string) {
 			return
 		}
 		if n, _ := res.RowsAffected(); n > 0 {
-			a.enqueue(chat, "✅ Готово! Сюда будут приходить уведомления NFC Control.", "")
+			a.enqueue(chat, "✅ Готово! Сюда будут приходить уведомления mymark.", "")
 			return
 		}
 	}
-	a.enqueue(chat, "Чтобы получать уведомления, нажмите «Привязать Telegram» в личном кабинете NFC Control.", "")
+	a.enqueue(chat, "Чтобы получать уведомления, нажмите «Подключить» в панели mymark.", "")
 }
 
 func (a *app) tgLink(w http.ResponseWriter, r *http.Request, s *session) {
@@ -314,9 +314,9 @@ func (a *app) expiryReminders(now time.Time) {
 		lines = append(lines, "• "+b.name+" — "+when)
 
 		if d >= 0 || d == -7 { // клиенту: до окончания и одно напоминание через неделю после
-			text := fmt.Sprintf("Подписка NFC Control для «%s» %s.\nПродлить: %s/cabinet/", b.name, when, a.public)
+			text := fmt.Sprintf("Обслуживание меток mymark для «%s» %s. Чтобы продлить, свяжитесь с нами.", b.name, when)
 			if d < 0 {
-				text = fmt.Sprintf("Подписка NFC Control для «%s» %s. Метки пока работают — продлите обслуживание: %s/cabinet/", b.name, when, a.public)
+				text = fmt.Sprintf("Обслуживание меток mymark для «%s» %s. Метки пока работают — чтобы продлить, свяжитесь с нами.", b.name, when)
 			}
 			a.notifyClients(b.id, text, fmt.Sprintf("remind:%d:%s:%d", b.id, b.exp, d))
 		}

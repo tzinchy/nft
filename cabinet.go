@@ -4,8 +4,9 @@ import (
 	"net/http"
 )
 
-// Кабинет клиента — только просмотр своего предприятия: точки, метки, статистика, подписка.
-// Ссылки и метки меняет только админ. Клиент может оплатить продление, привязать Telegram, сменить пароль.
+// Кабинет клиента — только просмотр своего предприятия: точки, метки, статистика, срок обслуживания.
+// Настраивать в нём нечего: всё меняет админ. Маршруты оплаты, Telegram и смены пароля остаются
+// на сервере, но в интерфейсе кабинета не показаны.
 
 func (a *app) cabinet(w http.ResponseWriter, r *http.Request) {
 	s := a.session(r)
@@ -27,11 +28,6 @@ func (a *app) cabinet(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, err)
 		return
 	}
-	pays, err := a.payments(b.ID)
-	if err != nil {
-		a.fail(w, err)
-		return
-	}
 	st, err := a.stats("business", b.ID, periodDays(r))
 	if err != nil {
 		a.fail(w, err)
@@ -42,7 +38,7 @@ func (a *app) cabinet(w http.ResponseWriter, r *http.Request) {
 		tagCount += len(l.TagList)
 	}
 	a.render(w, 200, "cabinet", a.data(r, s, b.Name, map[string]any{
-		"B": b, "Locations": locs, "TagCount": tagCount, "Payments": pays, "S": st, "PayEnabled": a.yk.enabled(),
+		"B": b, "Locations": locs, "TagCount": tagCount, "S": st,
 	}))
 }
 
