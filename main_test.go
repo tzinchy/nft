@@ -160,6 +160,23 @@ func TestAdminFlow(t *testing.T) {
 	}
 }
 
+func TestLegalDocs(t *testing.T) {
+	e := newEnv(t, config{Legal: legal{Name: "ИП Тестов Т. Т.", INN: "770000000000", Email: "pd@example.ru"}})
+	v := e.user("guest")
+	for _, p := range []string{"/docs/privacy", "/docs/consent", "/docs/cookies", "/docs/offer", "/"} {
+		r, body := v.get(p)
+		if r.StatusCode != 200 || !strings.Contains(body, "ИП Тестов Т. Т.") || !strings.Contains(body, "/docs/privacy") {
+			t.Fatalf("%s: %d, requisites or footer missing", p, r.StatusCode)
+		}
+	}
+	if r, _ := v.get("/docs/nope"); r.StatusCode != 404 {
+		t.Fatal("unknown doc")
+	}
+	if r, body := v.get("/cabinet/"); r.StatusCode != 200 || !strings.Contains(body, `name="consent"`) {
+		t.Fatal("cabinet login must have consent checkbox")
+	}
+}
+
 func TestBotsNotCounted(t *testing.T) {
 	e := newEnv(t, config{})
 	_, tok := e.seed()
@@ -193,9 +210,21 @@ func TestCabinet(t *testing.T) {
 	}
 
 	c := e.user("owner@barber.ru")
-	if r := c.post("/cabinet/login", url.Values{"email": {"owner@barber.ru"}, "password": {"clientpass1"}}); r.Header.Get("Location") != "/cabinet/" {
+	// 152-ФЗ: без галочки согласия первый вход не пускает, с галочкой — фиксирует согласие
+	if r := c.post("/cabinet/login", url.Values{"email": {"owner@barber.ru"}, "password": {"clientpass1"}}); r.StatusCode != 400 {
+		t.Fatalf("login without consent: %d", r.StatusCode)
+	}
+	if r := c.post("/cabinet/login", url.Values{"email": {"owner@barber.ru"}, "password": {"clientpass1"}, "consent": {"1"}}); r.Header.Get("Location") != "/cabinet/" {
 		t.Fatalf("client login -> %s", r.Header.Get("Location"))
 	}
+	if e.val(`SELECT consent_version FROM users WHERE email = 'owner@barber.ru'`) != docsVersion {
+		t.Fatal("consent not recorded")
+	}
+	// повторный вход — галочка уже не нужна
+	if r := e.user("owner@barber.ru").post("/cabinet/login", url.Values{"email": {"owner@barber.ru"}, "password": {"clientpass1"}}); r.Header.Get("Location") != "/cabinet/" {
+		t.Fatal("second login must not require consent again")
+	}
+	e.a.db.Exec(`DELETE FROM sessions WHERE rowid = (SELECT MAX(rowid) FROM sessions)`) // убираем сессию второго браузера
 	if r, body := c.get("/cabinet/"); r.StatusCode != 200 || !strings.Contains(body, "Barber House") || strings.Contains(body, "Чужая") {
 		t.Fatalf("cabinet: %d", r.StatusCode)
 	}
@@ -279,7 +308,7 @@ func TestYooKassa(t *testing.T) {
 	e.a.db.Exec(`UPDATE businesses SET expires_at = '2020-01-01' WHERE id = 1`) // истекла давно
 	admin.post("/panel/b/1/clients", url.Values{"email": {"owner@barber.ru"}, "password": {"clientpass1"}})
 	c := e.user("owner@barber.ru")
-	c.post("/cabinet/login", url.Values{"email": {"owner@barber.ru"}, "password": {"clientpass1"}})
+	c.post("/cabinet/login", url.Values{"email": {"owner@barber.ru"}, "password": {"clientpass1"}, "consent": {"1"}})
 
 	if r := c.post("/cabinet/pay", url.Values{}); r.Header.Get("Location") != "https://pay.example/yk1" {
 		t.Fatalf("pay redirect: %d %s", r.StatusCode, r.Header.Get("Location"))

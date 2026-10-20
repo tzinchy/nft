@@ -10,6 +10,12 @@
       <form method="post" action="{{.Action}}" class="flex flex-col gap-4">
         <div class="field"><label for="a-email">Почта</label><input id="a-email" type="email" name="email" autocomplete="username" required autofocus></div>
         <div class="field"><label for="a-pw">Пароль</label><input id="a-pw" type="password" name="password" {{if .Setup}}minlength="8" autocomplete="new-password" placeholder="Не короче 8 символов"{{else}}autocomplete="current-password"{{end}} required></div>
+        {{if .Cabinet}}
+        <label class="flex items-start gap-2.5 text-sm leading-snug">
+          <input type="checkbox" name="consent" value="1" class="input mt-0.5 size-4 shrink-0">
+          <span class="text-muted-foreground">Даю <a href="/docs/consent" target="_blank" class="text-primary hover:underline">согласие на обработку персональных данных</a> и подтверждаю, что ознакомлен с <a href="/docs/privacy" target="_blank" class="text-primary hover:underline">политикой обработки</a>. Нужно отметить при первом входе.</span>
+        </label>
+        {{end}}
         <button class="btn w-full">{{if .Setup}}Создать и войти{{else}}Войти{{end}}</button>
       </form>
     </section>

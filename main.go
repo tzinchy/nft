@@ -57,6 +57,25 @@ var migrations = []string{
 	CREATE TABLE payments(id INTEGER PRIMARY KEY, business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE SET NULL, provider TEXT NOT NULL, external_id TEXT UNIQUE, amount INTEGER NOT NULL, status TEXT NOT NULL, created_at INTEGER NOT NULL, paid_at INTEGER);
 	CREATE TABLE outbox(id INTEGER PRIMARY KEY, chat_id INTEGER NOT NULL, text TEXT NOT NULL, dedupe TEXT UNIQUE, created_at INTEGER NOT NULL, sent_at INTEGER, attempts INTEGER NOT NULL DEFAULT 0, next_at INTEGER NOT NULL DEFAULT 0, error TEXT NOT NULL DEFAULT '');
 	CREATE TABLE kv(k TEXT PRIMARY KEY, v TEXT NOT NULL);`,
+
+	`ALTER TABLE users ADD COLUMN consent_at INTEGER;
+	ALTER TABLE users ADD COLUMN consent_version TEXT;`,
+}
+
+// docsVersion — редакция юридических документов; меняйте при правке их текста.
+const docsVersion = "2026-10-20"
+
+// legal — реквизиты оператора/исполнителя для документов и подвала сайта (из env).
+type legal struct {
+	Name, INN, OGRN, Address, Email, Phone string
+}
+
+// docs: адрес страницы → шаблон и заголовок.
+var docs = map[string][2]string{
+	"privacy": {"doc_privacy", "Политика обработки персональных данных"},
+	"consent": {"doc_consent", "Согласие на обработку персональных данных"},
+	"cookies": {"doc_cookies", "Политика использования cookie"},
+	"offer":   {"doc_offer", "Публичная оферта"},
 }
 
 var errMsgs = map[string]string{
@@ -67,6 +86,7 @@ var errMsgs = map[string]string{
 	"pw":      "Нужна почта и пароль от 8 символов",
 	"oldpw":   "Неверный текущий пароль",
 	"tg":      "Telegram сейчас недоступен, попробуйте позже",
+	"consent": "Чтобы войти, подтвердите согласие на обработку персональных данных",
 	"nopay":   "Онлайн-оплата пока не подключена — свяжитесь с нами",
 	"payfail": "Не удалось создать платёж, попробуйте позже",
 	"amount":  "Неверная сумма",
@@ -82,6 +102,7 @@ var okMsgs = map[string]string{
 type config struct {
 	DBPath, Public, Panel string
 	Contact               string // ссылка «Связаться» на главной (Telegram, WhatsApp, почта)
+	Legal                 legal
 	YK                    ykConfig
 	TGToken, TGAPI        string
 }
@@ -91,6 +112,7 @@ type app struct {
 	tpl           map[string]*template.Template
 	public, panel string
 	contact       string
+	legal         legal
 	salt          string // для обезличенного подсчёта уникальных посетителей
 	yk            ykConfig
 	tg            *telegram // nil — Telegram выключен
@@ -146,6 +168,10 @@ func main() {
 		Public:  env("PUBLIC_URL", "http://localhost:8080"),
 		Panel:   env("PANEL_PATH", "/panel"),
 		Contact: os.Getenv("CONTACT_URL"),
+		Legal: legal{
+			Name: os.Getenv("LEGAL_NAME"), INN: os.Getenv("LEGAL_INN"), OGRN: os.Getenv("LEGAL_OGRN"),
+			Address: os.Getenv("LEGAL_ADDRESS"), Email: os.Getenv("LEGAL_EMAIL"), Phone: os.Getenv("LEGAL_PHONE"),
+		},
 		YK: ykConfig{
 			ShopID:  os.Getenv("YOOKASSA_SHOP_ID"),
 			Secret:  os.Getenv("YOOKASSA_SECRET_KEY"),
@@ -214,7 +240,7 @@ func newApp(c config) (*app, http.Handler, error) {
 	a := &app{
 		db: db, tpl: map[string]*template.Template{},
 		public: strings.TrimRight(c.Public, "/"), panel: "/" + strings.Trim(c.Panel, "/"),
-		contact: c.Contact, yk: c.YK, http: &http.Client{Timeout: 30 * time.Second}, now: time.Now,
+		contact: c.Contact, legal: c.Legal, yk: c.YK, http: &http.Client{Timeout: 30 * time.Second}, now: time.Now,
 	}
 	if c.TGToken != "" {
 		a.tg = &telegram{base: strings.TrimRight(c.TGAPI, "/") + "/bot" + c.TGToken, http: &http.Client{Timeout: 70 * time.Second}}
@@ -262,6 +288,7 @@ func newApp(c config) (*app, http.Handler, error) {
 	mux.HandleFunc("GET /t/{token}", a.redirect)
 	mux.HandleFunc("POST /pay/yookassa", a.ykWebhook)
 	mux.HandleFunc("GET /{$}", a.landing)
+	mux.HandleFunc("GET /docs/{name}", a.doc)
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		a.message(w, 404, "Страница не найдена")
 	})
@@ -391,6 +418,21 @@ func (a *app) landing(w http.ResponseWriter, r *http.Request) {
 	a.render(w, 200, "landing", d)
 }
 
+// doc — юридические документы (политика, согласие, cookie, оферта).
+func (a *app) doc(w http.ResponseWriter, r *http.Request) {
+	d, ok := docs[r.PathValue("name")]
+	if !ok {
+		a.message(w, 404, "Страница не найдена")
+		return
+	}
+	data := map[string]any{"Title": d[1]}
+	if s := a.session(r); s != nil {
+		data = a.data(r, s, d[1], data)
+	}
+	data["Public"], data["Index"] = true, true
+	a.render(w, 200, d[0], data)
+}
+
 // --- вход ---
 
 func (a *app) authPage(w http.ResponseWriter, code int, setup bool, action, errText string) {
@@ -398,7 +440,7 @@ func (a *app) authPage(w http.ResponseWriter, code int, setup bool, action, errT
 	if setup {
 		title = "Создание администратора"
 	}
-	a.render(w, code, "auth", map[string]any{"Title": title, "Setup": setup, "Action": action, "Error": errText})
+	a.render(w, code, "auth", map[string]any{"Title": title, "Setup": setup, "Action": action, "Error": errText, "Cabinet": action == "/cabinet/login"})
 }
 
 func (a *app) setup(w http.ResponseWriter, r *http.Request) {
@@ -424,11 +466,24 @@ func (a *app) setup(w http.ResponseWriter, r *http.Request) {
 func (a *app) login(w http.ResponseWriter, r *http.Request) {
 	var id int64
 	var hash, role string
-	err := a.db.QueryRow(`SELECT id, password_hash, role FROM users WHERE email = ?`, strings.TrimSpace(r.PostFormValue("email"))).Scan(&id, &hash, &role)
+	var consented bool
+	err := a.db.QueryRow(`SELECT id, password_hash, role, consent_at IS NOT NULL FROM users WHERE email = ?`, strings.TrimSpace(r.PostFormValue("email"))).Scan(&id, &hash, &role, &consented)
 	if err != nil || !checkPassword(hash, r.PostFormValue("password")) {
 		time.Sleep(time.Second) // ponytail: тормоз перебора на запрос; нужен rate limit по IP, если вход начнут долбить
 		a.authPage(w, 401, false, r.URL.Path, "Неверная почта или пароль")
 		return
+	}
+	// 152-ФЗ: клиент даёт отдельное согласие на обработку ПДн — галочкой при первом входе.
+	// Админ — сам оператор, ему согласие не нужно.
+	if role == "client" && !consented {
+		if r.PostFormValue("consent") != "1" {
+			a.authPage(w, 400, false, r.URL.Path, errMsgs["consent"])
+			return
+		}
+		if _, err := a.db.Exec(`UPDATE users SET consent_at = ?, consent_version = ? WHERE id = ?`, a.now().Unix(), docsVersion, id); err != nil {
+			a.fail(w, err)
+			return
+		}
 	}
 	a.startSession(w, r, id, role)
 }
@@ -620,7 +675,10 @@ func (a *app) data(r *http.Request, s *session, title string, d map[string]any) 
 
 func (a *app) render(w http.ResponseWriter, code int, page string, d map[string]any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("X-Robots-Tag", "noindex")
+	if d["Index"] != true {
+		w.Header().Set("X-Robots-Tag", "noindex")
+	}
+	d["Legal"], d["DocsVersion"] = a.legal, docsVersion
 	w.WriteHeader(code)
 	if err := a.tpl[page].ExecuteTemplate(w, "layout", d); err != nil {
 		log.Print(err)

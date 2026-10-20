@@ -155,3 +155,31 @@
 {{end}}
 
 {{define "crumbs"}}<nav class="crumbs" aria-label="Навигация">{{range $i, $c := .}}{{if $i}}{{template "i-chevron-right"}}{{end}}{{if $c.href}}<a href="{{$c.href}}">{{$c.label}}</a>{{else}}<span class="text-foreground">{{$c.label}}</span>{{end}}{{end}}</nav>{{end}}
+
+{{/* значение реквизита или заметная подсказка «[укажите …]», если не задано в настройках */}}
+{{define "v"}}{{if .v}}{{.v}}{{else}}<span class="fill-me">[{{.ph}}]</span>{{end}}{{end}}
+
+{{define "operator"}}{{template "v" (dict "v" .Legal.Name "ph" "наименование / ФИО ИП")}}, ИНН {{template "v" (dict "v" .Legal.INN "ph" "ИНН")}}{{if .Legal.OGRN}}, ОГРН/ОГРНИП {{.Legal.OGRN}}{{end}}{{end}}
+
+{{define "footer"}}
+<footer class="border-t">
+  <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6">
+    <nav class="flex flex-wrap gap-x-6 gap-y-2" aria-label="Документы">
+      <a href="/docs/offer" class="hover:text-foreground">Публичная оферта</a>
+      <a href="/docs/privacy" class="hover:text-foreground">Политика обработки персональных данных</a>
+      <a href="/docs/consent" class="hover:text-foreground">Согласие на обработку данных</a>
+      <a href="/docs/cookies" class="hover:text-foreground">Cookie</a>
+      <a href="/cabinet/" class="hover:text-foreground">Вход для клиентов</a>
+    </nav>
+    <p>mymark — {{template "operator" .}}.{{if .Legal.Address}} {{.Legal.Address}}.{{end}}{{if .Legal.Email}} <a href="mailto:{{.Legal.Email}}" class="hover:text-foreground">{{.Legal.Email}}</a>{{end}}{{if .Legal.Phone}}, {{.Legal.Phone}}{{end}}</p>
+  </div>
+</footer>
+{{end}}
+
+{{define "cookie-notice"}}
+<div id="cookie-notice" hidden class="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-xl flex-col gap-3 rounded-xl border bg-card p-4 text-sm shadow-lg sm:flex-row sm:items-center">
+  <p class="flex-1 text-muted-foreground">Сайт использует только технические cookie — они нужны, чтобы вы оставались в аккаунте. Аналитику и рекламу не подключаем. <a href="/docs/cookies" class="text-primary hover:underline">Подробнее</a></p>
+  <button type="button" class="btn shrink-0" data-size="sm" onclick="try{localStorage.setItem('cookie-ok','1')}catch(e){};this.parentNode.hidden=true">Понятно</button>
+</div>
+<script>try{if(!localStorage.getItem("cookie-ok"))document.getElementById("cookie-notice").hidden=false}catch(e){document.getElementById("cookie-notice").hidden=false}</script>
+{{end}}

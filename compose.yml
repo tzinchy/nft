@@ -2,11 +2,19 @@ name: nfc-control
 
 services:
   app:
+    image: nfc-control-app
     build: .
     restart: unless-stopped
     environment:
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
       PANEL_PATH: ${PANEL_PATH:-/panel}
+      CONTACT_URL: ${CONTACT_URL:-}
+      LEGAL_NAME: ${LEGAL_NAME:-}
+      LEGAL_INN: ${LEGAL_INN:-}
+      LEGAL_OGRN: ${LEGAL_OGRN:-}
+      LEGAL_ADDRESS: ${LEGAL_ADDRESS:-}
+      LEGAL_EMAIL: ${LEGAL_EMAIL:-}
+      LEGAL_PHONE: ${LEGAL_PHONE:-}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
       YOOKASSA_RECEIPT: ${YOOKASSA_RECEIPT:-0}
