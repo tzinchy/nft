@@ -2,21 +2,36 @@
 <section class="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-6 pb-16 sm:px-6 md:grid-cols-[1.1fr_1fr] md:pt-14 md:pb-24">
   <div class="flex flex-col items-start gap-6">
     <h1 class="font-display text-[2.4rem] leading-[1.05] font-semibold tracking-tight sm:text-5xl lg:text-6xl">Отзывы с одного касания</h1>
-    <p class="max-w-xl text-lg leading-relaxed text-muted-foreground">Наклейка с NFC-меткой на кассе или столе. Гость прикладывает телефон и сразу попадает на страницу отзывов о вашем заведении — без QR-кодов, приложений и поиска по картам.</p>
+    <p class="max-w-xl text-lg leading-relaxed text-muted-foreground">NFC-карточка или наклейка на кассе, столе, ресепшене. Гость прикладывает телефон и сразу попадает на страницу отзывов о вашем заведении — без QR-кодов, приложений и поиска по картам.</p>
     <div class="flex flex-wrap gap-3">
       {{if .Contact}}<a href="{{.Contact}}" class="btn" data-size="lg" rel="noopener">{{template "i-send"}}Подключить заведение</a>{{end}}
       <a href="#how" class="btn"{{if .Contact}} data-variant="outline"{{end}} data-size="lg">Как это работает</a>
     </div>
   </div>
 
-  <div class="relative mx-auto aspect-square w-full max-w-[26rem] overflow-hidden rounded-[2rem] bg-primary text-primary-foreground" aria-hidden="true">
-    <div class="ripple absolute inset-0 grid place-items-center">
-      <span class="absolute size-[92%] rounded-full border-2 border-white/40"></span>
-      <span class="absolute size-[92%] rounded-full border-2 border-white/40"></span>
-      <span class="absolute size-[92%] rounded-full border-2 border-white/40"></span>
-    </div>
+  <div class="relative mx-auto aspect-square w-full max-w-[26rem] overflow-hidden rounded-[2rem] bg-primary" aria-hidden="true">
+    <!-- NFC-карточка на стойке: волны расходятся от чипа -->
     <div class="absolute inset-0 grid place-items-center">
-      <span class="grid size-28 place-items-center rounded-full bg-white text-[#2440e6] shadow-2xl sm:size-32 [&>svg]:size-12">{{template "i-nfc"}}</span>
+      <div class="relative aspect-[1.586] w-[80%] -translate-y-10 -rotate-6 rounded-2xl bg-white p-[6%] text-[#1b2230] shadow-[0_30px_60px_-20px_rgba(10,20,80,.55)]">
+        <div class="flex h-full flex-col justify-between">
+          <div class="flex items-center gap-2">
+            <span class="grid size-7 place-items-center rounded-full bg-[#1b2230] font-display text-[11px] font-semibold text-white">З</span>
+            <span class="font-display text-sm font-semibold tracking-tight">Зерно</span>
+          </div>
+          <div>
+            <p class="font-display text-[15px] leading-tight font-semibold sm:text-base">Приложите телефон</p>
+            <p class="mt-1 text-[11px] text-[#5e6878] sm:text-xs">и оставьте отзыв о нас</p>
+          </div>
+        </div>
+        <div class="absolute top-1/2 right-[9%] grid size-16 -translate-y-1/2 place-items-center sm:size-20">
+          <div class="ripple absolute inset-[-70%]">
+            <span class="absolute inset-0 rounded-full border-2 border-[#2440e6]/50"></span>
+            <span class="absolute inset-0 rounded-full border-2 border-[#2440e6]/50"></span>
+            <span class="absolute inset-0 rounded-full border-2 border-[#2440e6]/50"></span>
+          </div>
+          <span class="relative grid size-full place-items-center rounded-full bg-[#2440e6] text-white shadow-[0_6px_18px_-4px_rgba(36,64,230,.6)] [&>svg]:size-8 sm:[&>svg]:size-9">{{template "i-nfc"}}</span>
+        </div>
+      </div>
     </div>
     <div class="absolute inset-x-5 bottom-5 flex items-center gap-3 rounded-2xl bg-white/95 p-3 text-[#1b2230] shadow-lg backdrop-blur sm:inset-x-8 sm:bottom-8">
       <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e8ecfd] text-[#2440e6] [&>svg]:size-5">{{template "i-map-pin"}}</span>
@@ -32,8 +47,8 @@
     <ol class="mt-10 grid gap-8 md:grid-cols-3">
       <li class="flex flex-col gap-3">
         <span class="font-display text-4xl font-semibold text-primary">1</span>
-        <h3 class="text-lg font-semibold">Клеим метку</h3>
-        <p class="text-muted-foreground">Записываем в NFC-наклейку постоянную ссылку и размещаем её там, где гость ждёт: на кассе, столе, ресепшене.</p>
+        <h3 class="text-lg font-semibold">Ставим метку</h3>
+        <p class="text-muted-foreground">Записываем постоянную ссылку в NFC-карточку или наклейку и ставим её там, где гость ждёт: на кассе, столе, ресепшене.</p>
       </li>
       <li class="flex flex-col gap-3">
         <span class="font-display text-4xl font-semibold text-primary">2</span>
@@ -56,7 +71,7 @@
   </div>
   <div class="card">
     <section class="flex flex-col gap-3 text-sm">
-      <div class="flex items-center gap-3 rounded-lg bg-muted p-3"><span class="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground [&>svg]:size-4">{{template "i-nfc"}}</span><span><span class="block font-medium">Метка на кассе</span><span class="text-muted-foreground">адрес не меняется никогда</span></span></div>
+      <div class="flex items-center gap-3 rounded-lg bg-muted p-3"><span class="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground [&>svg]:size-4">{{template "i-nfc"}}</span><span><span class="block font-medium">Карточка на кассе</span><span class="text-muted-foreground">адрес не меняется никогда</span></span></div>
       <div class="ml-[1.1rem] h-5 border-l-2 border-dashed border-primary/40"></div>
       <div class="flex items-center gap-3 rounded-lg bg-muted p-3"><span class="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground [&>svg]:size-4">{{template "i-refresh-cw"}}</span><span><span class="block font-medium">mymark</span><span class="text-muted-foreground">решает, куда отправить гостя</span></span></div>
       <div class="ml-[1.1rem] h-5 border-l-2 border-dashed border-primary/40"></div>
